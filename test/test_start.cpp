@@ -55,5 +55,19 @@ int main(int argc, char* argv[])
     std::cout << it.next() << std::endl;
     std::cout << it.next() << std::endl;
   }
+
+  {
+    const std::vector<int> a{ 1, 2, 3, 4 };
+    auto it = rs::iter(a);
+    auto mapped_it = it.map([](const auto& v) -> int { return v * v; });
+    std::cout << type_string<decltype(it)::type>() << std::endl;
+    std::cout << type_string<decltype(it)::function_type>() << std::endl;
+
+    std::cout << mapped_it.next() << std::endl;
+    std::cout << mapped_it.next() << std::endl;
+    std::cout << mapped_it.next() << std::endl;
+    std::cout << mapped_it.next() << std::endl;
+    std::cout << mapped_it.next() << std::endl;
+  }
   return 0;
 }

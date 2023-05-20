@@ -76,6 +76,14 @@ struct Iterator
     return make_iterator<U>(std::move(generator));
   }
 
+  template <typename F>
+  auto map(F&& f) &
+  {
+    using U = std::invoke_result<F, T>::type;
+    auto generator = [this, f]() mutable -> Option<U> { return this->next().map(f); };
+    return make_iterator<U>(std::move(generator));
+  }
+
   NextFun f_;
 };
 
