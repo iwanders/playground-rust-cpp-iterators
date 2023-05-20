@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <vector>
 
@@ -12,7 +13,9 @@ std::string type_string()
 int main(int argc, char* argv[])
 {
   namespace rs = rust;
+
   {
+    std::cout << "Start with the definition of an iterator" << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
     auto it = rs::iter(a);
 
@@ -23,10 +26,12 @@ int main(int argc, char* argv[])
     std::cout << it.next() << std::endl;
 
     std::cout << rs::Option<int>() << std::endl;
+    std::cout << std::endl;
   }
 
   {
-    // This shouldn't compile.
+    std::cout << "Test the option a bit" << std::endl;
+    // This shouldn't compile, get on an rvalue is invalid.
     //  auto& z = rs::Option(3).get();
     // But this should:
     auto opt = rs::Option(3);
@@ -42,9 +47,11 @@ int main(int argc, char* argv[])
     {
       std::cout << e.what() << std::endl;
     }
+    std::cout << std::endl;
   }
 
   {
+    std::cout << "Check that we can map on an option" << std::endl;
     // Option map...
     auto opt1 = rs::Option(3);
     auto opt2 = opt1.map([](const auto& v) { return v * v; });
@@ -52,9 +59,11 @@ int main(int argc, char* argv[])
 
     auto opt3 = opt2.map([](const auto& v) { return v + 0.5; });
     std::cout << opt3 << std::endl;
+    std::cout << std::endl;
   }
 
   {
+    std::cout << "Check we can make a mapped iterator" << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
     auto it = rs::iter(a).map([](const auto& v) -> int { return v * v; });
     std::cout << type_string<decltype(it)::type>() << std::endl;
@@ -65,38 +74,65 @@ int main(int argc, char* argv[])
     std::cout << it.next() << std::endl;
     std::cout << it.next() << std::endl;
     std::cout << it.next() << std::endl;
+    std::cout << std::endl;
   }
 
   {
-    const std::vector<int> a{ 1, 2, 3, 4 };
-    auto it = rs::iter(a);
-    auto mapped_it = it.map([](const auto& v) -> int { return v * v; });
-    std::cout << type_string<decltype(it)::type>() << std::endl;
-    std::cout << type_string<decltype(it)::function_type>() << std::endl;
+    std::cout << "Check if we can collect into an inferred type " << std::endl;
 
-    std::cout << mapped_it.next() << std::endl;
-    std::cout << mapped_it.next() << std::endl;
-    std::cout << mapped_it.next() << std::endl;
-    std::cout << mapped_it.next() << std::endl;
-    std::cout << mapped_it.next() << std::endl;
-  }
-
-  {
-    const std::vector<int> a{ 1, 2, 3, 4 };
-    std::vector<int> and_back = rs::iter(a).collect();
-    for (auto& v : and_back)
+    const auto print_vec = [](const std::vector<int>& c)
     {
-      std::cout << v << std::endl;
-    }
+      for (auto& v : c)
+      {
+        std::cout << v << ", ";
+      }
+      std::cout << std::endl;
+    };
+
+    const std::vector<int> a{ 1, 2, 3, 4 };
+
+    // Return type idiom, type inferred from conversion to the type on the left
+    std::vector<int> and_back = rs::iter(a).collect();
+    // print it.
+    print_vec(and_back);
+
+    // type infered from the conversion needed to make the argument work.
+    print_vec(rs::iter(a).collect());
   }
 
   {
+    std::cout << "Check if we can collect into an explicit type." << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
     auto and_back = rs::iter(a).collect<std::vector<float>>();
     for (auto& v : and_back)
     {
+      std::cout << v << ", ";
+    }
+    std::cout << std::endl;
+  }
+
+  {
+    std::cout << "Check if we can chain maps and collects." << std::endl;
+    const std::vector<int> a{ 1, 2, 3, 4 };
+    auto our_map_it = rs::iter(a)
+                          .map([](const auto& v) { return static_cast<double>(v); })
+                          .map([](const auto& v) { return v * v + 0.5; })
+                          .map([](const auto& x) { return std::sqrt(x); });
+    std::cout << "here be dragons: ";
+    std::cout << type_string<decltype(our_map_it)::function_type>() << std::endl;
+    auto and_back = our_map_it.collect<std::vector<float>>();
+    for (auto& v : and_back)
+    {
       std::cout << v << std::endl;
     }
+    std::cout << std::endl;
+  }
+
+  {
+    std::cout << "Check if sum works" << std::endl;
+    const std::vector<int> a{ 1, 2, 3, 4 };
+    auto sum = rs::iter(a).map([](const auto& v) { return v * v; }).sum();
+    std::cout << sum << std::endl;
   }
 
   return 0;

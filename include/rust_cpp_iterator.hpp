@@ -47,7 +47,7 @@ struct Option
 {
   using type = T;
 
-  //  static constexpr Option<T> None = Option<T>{};
+  // We don't actually use get(), but... why doesn't the std::optional do this `&&` trick?
   T& get() && = delete;  // Calling get() on rvalue results in dangling reference.
   T& get() &
   {
@@ -90,6 +90,7 @@ struct Option
   T v_;
 };
 
+/// Make an Option printable.
 template <typename SS, typename T>
 SS& operator<<(SS& os, const Option<T>& opt)
 {
@@ -104,6 +105,8 @@ SS& operator<<(SS& os, const Option<T>& opt)
   return os;
 }
 
+
+/// Helper struct to allow return type conversion.
 template <typename F>
 struct Collector
 {
@@ -155,6 +158,26 @@ struct Iterator
   R collect()
   {
     return FromIterator<R>::from_iter(f_);
+  }
+
+  auto sum() &&
+  {
+    auto first = f_();
+    if (first.is_some())
+    {
+      auto current = std::move(first).unwrap();
+      auto i_next = next();
+      while (i_next.is_some())
+      {
+        current = current + std::move(i_next).unwrap();  // should call the sum trait really.
+        i_next = next();
+      }
+      return current;
+    }
+    else
+    {
+      return typename decltype(first)::type{};  // should be the zero value of a type... but alas.
+    }
   }
 
   NextFun f_;
