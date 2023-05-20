@@ -135,5 +135,15 @@ int main(int argc, char* argv[])
     std::cout << sum << std::endl;
   }
 
+  {
+    std::cout << "Check if range based for loop works." << std::endl;
+    const std::vector<int> a{ 1, 2, 3, 4 };
+    for (const auto& v : rs::iter(a).map([](const auto& v) { return v * v; }))
+    {
+      std::cout << " " << v;
+    }
+    std::cout << std::endl;
+  }
+
   return 0;
 }

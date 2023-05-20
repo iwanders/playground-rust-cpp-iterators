@@ -81,6 +81,10 @@ struct Option
   {
     return populated_;
   }
+  bool is_none() const
+  {
+    return !is_some();
+  }
 
   Option(const T& v) : v_{ v }, populated_{ true } {};
   Option(T&& v) : v_{ v }, populated_{ true } {};
@@ -105,7 +109,6 @@ SS& operator<<(SS& os, const Option<T>& opt)
   return os;
 }
 
-
 /// Helper struct to allow return type conversion.
 template <typename F>
 struct Collector
@@ -117,6 +120,45 @@ struct Collector
   }
 
   F f_;
+};
+
+template <typename T, typename IterPtr>
+struct RangeIter
+{
+  T operator*()
+  {
+    return opt_.get();  // bah, bah, bah.
+  }
+
+  bool operator!=(const auto& other)
+  {
+    return opt_.is_some();
+  }
+
+  RangeIter<T, IterPtr>& operator++()
+  {
+    opt_ = (*it_).next();
+    return *this;
+  }
+  RangeIter<T, IterPtr> operator++(int)
+  {
+    opt_ = (*it_).next();
+    return *this;
+  }
+
+  static RangeIter<T, IterPtr> end()
+  {
+    return RangeIter<T, IterPtr>{ {}, nullptr };
+  }
+  static RangeIter<T, IterPtr> begin(IterPtr it)
+  {
+    auto range_it = RangeIter<T, IterPtr>{ {}, it };
+    range_it++;
+    return range_it;
+  }
+
+  Option<T> opt_;
+  IterPtr it_;  //  iff nullptr, end iterator.
 };
 
 template <typename T, typename NextFun>
@@ -178,6 +220,15 @@ struct Iterator
     {
       return typename decltype(first)::type{};  // should be the zero value of a type... but alas.
     }
+  }
+
+  auto begin()
+  {
+    return RangeIter<T, decltype(this)>::begin(this);
+  }
+  auto end()
+  {
+    return RangeIter<T, decltype(this)>::end();
   }
 
   NextFun f_;
