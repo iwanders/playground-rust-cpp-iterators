@@ -77,5 +77,14 @@ int main(int argc, char* argv[])
       std::cout << v << std::endl;
     }
   }
+
+  {
+    const std::vector<int> a{ 1, 2, 3, 4 };
+    auto and_back = rs::iter(a).collect<std::vector<float>>();
+    for (auto& v : and_back) {
+      std::cout << v << std::endl;
+    }
+  }
+
   return 0;
 }
