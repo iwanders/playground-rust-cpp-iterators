@@ -1,8 +1,8 @@
 #pragma once
-#include <iostream>
-#include <utility>
-#include <string>
 #include <exception>
+#include <iostream>
+#include <string>
+#include <utility>
 
 namespace rust
 {
@@ -11,15 +11,21 @@ template <typename A>
 struct FromIterator;
 
 template <typename A>
-struct FromIterator<std::vector<A>> {
+struct FromIterator<std::vector<A>>
+{
   template <typename F>
-  static std::vector<A> from_iter(F&& f) {
+  static std::vector<A> from_iter(F&& f)
+  {
     std::vector<A> c;
-    while (true) {
+    while (true)
+    {
       auto z = f();
-      if (z.is_some()) {
+      if (z.is_some())
+      {
         c.push_back(std::move(z).unwrap());
-      } else {
+      }
+      else
+      {
         break;
       }
     }
@@ -27,7 +33,8 @@ struct FromIterator<std::vector<A>> {
   }
 };
 
-struct panic_error : std::runtime_error {
+struct panic_error : std::runtime_error
+{
   panic_error(const char* s) : std::runtime_error(s){};
   panic_error(const std::string& s) : std::runtime_error(s){};
 };
@@ -61,14 +68,17 @@ struct Option
     }
   }
 
-  T unwrap() && {
-    if (populated_) {
-      return std::exchange(v_, T{}); // bah, now Option requires default constructibility.
+  T unwrap() &&
+  {
+    if (populated_)
+    {
+      return std::exchange(v_, T{});  // bah, now Option requires default constructibility.
     }
     throw panic_error("unwrap called on empty Option");
   }
 
-  bool is_some() const {
+  bool is_some() const
+  {
     return populated_;
   }
 
@@ -95,10 +105,11 @@ SS& operator<<(SS& os, const Option<T>& opt)
 }
 
 template <typename F>
-struct Collector {
-
+struct Collector
+{
   template <class Container>
-  operator Container () {
+  operator Container()
+  {
     return FromIterator<Container>::from_iter(f_);
   }
 
@@ -134,13 +145,15 @@ struct Iterator
     return make_iterator<U>(std::move(generator));
   }
 
-  auto collect() && {
+  auto collect() &&
+  {
     auto old_f = std::move(f_);  // rip out the guts of the previous
-    return Collector{[old_f]() mutable {return old_f();}};
+    return Collector{ [old_f]() mutable { return old_f(); } };
   }
 
   template <typename R>
-  R collect() {
+  R collect()
+  {
     return FromIterator<R>::from_iter(f_);
   }
 
@@ -154,12 +167,6 @@ static auto make_iterator(RealNextFun&& v)
 };
 
 }  // namespace detail
-
-
-
-
-
-
 
 template <typename T>
 using Option = detail::Option<T>;

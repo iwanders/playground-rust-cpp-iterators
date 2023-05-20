@@ -31,6 +31,17 @@ int main(int argc, char* argv[])
     // But this should:
     auto opt = rs::Option(3);
     auto& z = opt.get();
+    auto x = std::move(opt).unwrap();
+
+    opt = rs::Option<int>();
+    try
+    {
+      auto bad = std::move(opt).unwrap();
+    }
+    catch (const rs::panic_error& e)
+    {
+      std::cout << e.what() << std::endl;
+    }
   }
 
   {
@@ -73,7 +84,8 @@ int main(int argc, char* argv[])
   {
     const std::vector<int> a{ 1, 2, 3, 4 };
     std::vector<int> and_back = rs::iter(a).collect();
-    for (auto& v : and_back) {
+    for (auto& v : and_back)
+    {
       std::cout << v << std::endl;
     }
   }
@@ -81,7 +93,8 @@ int main(int argc, char* argv[])
   {
     const std::vector<int> a{ 1, 2, 3, 4 };
     auto and_back = rs::iter(a).collect<std::vector<float>>();
-    for (auto& v : and_back) {
+    for (auto& v : and_back)
+    {
       std::cout << v << std::endl;
     }
   }
