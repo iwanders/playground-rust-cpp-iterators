@@ -69,5 +69,13 @@ int main(int argc, char* argv[])
     std::cout << mapped_it.next() << std::endl;
     std::cout << mapped_it.next() << std::endl;
   }
+
+  {
+    const std::vector<int> a{ 1, 2, 3, 4 };
+    std::vector<int> and_back = rs::iter(a).collect();
+    for (auto& v : and_back) {
+      std::cout << v << std::endl;
+    }
+  }
   return 0;
 }

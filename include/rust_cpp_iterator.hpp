@@ -1,9 +1,17 @@
 #pragma once
 #include <iostream>
 #include <utility>
+#include <string>
+#include <exception>
 
 namespace rust
 {
+
+struct panic_error : std::runtime_error {
+  panic_error(const char* s) : std::runtime_error(s){};
+  panic_error(const std::string& s) : std::runtime_error(s){};
+};
+
 namespace detail
 {
 
@@ -33,6 +41,17 @@ struct Option
     }
   }
 
+  T unwrap() && {
+    if (populated_) {
+      return std::exchange(v_, T{}); // bah, now Option requires default constructibility.
+    }
+    throw panic_error("unwrap called on empty Option");
+  }
+
+  bool is_some() const {
+    return populated_;
+  }
+
   Option(const T& v) : v_{ v }, populated_{ true } {};
   Option(T&& v) : v_{ v }, populated_{ true } {};
   Option() : populated_{ false } {};
@@ -54,6 +73,26 @@ SS& operator<<(SS& os, const Option<T>& opt)
   }
   return os;
 }
+
+template <typename F>
+struct Collector {
+
+  template <class Container>
+  operator Container () {
+    Container c;
+    while (true) {
+      auto z = f_();
+      if (z.is_some()) {
+        c.push_back(std::move(z).unwrap());
+      } else {
+        break;
+      }
+    }
+    return c;
+  }
+
+  F f_;
+};
 
 template <typename T, typename NextFun>
 struct Iterator
@@ -84,6 +123,12 @@ struct Iterator
     return make_iterator<U>(std::move(generator));
   }
 
+  
+  auto collect() && {
+    auto old_f = std::move(f_);  // rip out the guts of the previous
+    return Collector{[old_f]() mutable {return old_f();}};
+  }
+
   NextFun f_;
 };
 
@@ -94,6 +139,12 @@ static auto make_iterator(RealNextFun&& v)
 };
 
 }  // namespace detail
+
+
+
+
+
+
 
 template <typename T>
 using Option = detail::Option<T>;
