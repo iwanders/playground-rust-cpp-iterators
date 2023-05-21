@@ -190,6 +190,23 @@ struct Iterator
     return make_iterator<U>(std::move(generator));
   }
 
+  template <typename F>
+  bool any(F&& f) &&
+  {
+    using U = std::invoke_result<F, T>::type;
+    static_assert(std::is_same<U, bool>::value, "return for any must be bool");
+    auto value = next();
+    while (value.is_some())
+    {
+      if (f(std::move(value).unwrap()))
+      {
+        return true;
+      }
+      value = next();
+    }
+    return false;
+  }
+
   auto collect() &&
   {
     auto old_f = std::move(f_);  // rip out the guts of the previous

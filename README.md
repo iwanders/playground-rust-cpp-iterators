@@ -36,3 +36,11 @@ Some dabbling around exploring how Rust style iterators could work in C++.
                           .map([](const auto& x) { return std::sqrt(x); });
     auto and_back = our_map_it.collect<std::vector<float>>();
 ```
+
+```cpp
+    const std::vector<int> a{ 2, 4, 6 };
+    const auto has_even = rs::iter(a).any([](const auto& v) { return v % 2 == 0; });
+    std::cout << "has_even:" << has_even << std::endl;
+    const auto has_odd = rs::iter(a).any([](const auto& v) { return v % 2 != 0; });
+    std::cout << "has_odd:" << has_odd << std::endl;
+```
