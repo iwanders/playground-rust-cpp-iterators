@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
                           .map([](const auto& x) { return std::sqrt(x); });
     std::cout << "here be dragons: ";
     std::cout << type_string<decltype(our_map_it)::function_type>() << std::endl;
-    auto and_back = our_map_it.collect<std::vector<float>>();
+    auto and_back = std::move(our_map_it).collect<std::vector<float>>();
     for (auto& v : and_back)
     {
       std::cout << v << std::endl;

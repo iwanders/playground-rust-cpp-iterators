@@ -208,16 +208,18 @@ struct Iterator
     return false;
   }
 
+  template <typename CollectType = void>
   auto collect() &&
   {
-    auto old_f = std::move(f_);  // rip out the guts of the previous
-    return Collector{ [old_f]() mutable { return old_f(); } };
-  }
-
-  template <typename R>
-  R collect()
-  {
-    return FromIterator<R>::from_iter(f_);
+    if constexpr (std::is_same<CollectType, void>::value)
+    {
+      auto old_f = std::move(f_);  // rip out the guts of the previous
+      return Collector{ [old_f]() mutable { return old_f(); } };
+    }
+    else
+    {
+      return FromIterator<CollectType>::from_iter(f_);
+    }
   }
 
   auto sum() &&
@@ -283,7 +285,8 @@ auto iter(const C& container)
         {
           return detail::Option<typename C::value_type>();
         }
-      }, size);
+      },
+      size);
 }
 
 }  // namespace rust
