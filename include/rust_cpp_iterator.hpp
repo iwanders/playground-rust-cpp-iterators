@@ -8,6 +8,8 @@
 namespace rust
 {
 
+using usize = std::size_t;
+
 template <typename A>
 struct FromIterator;
 
@@ -18,7 +20,15 @@ struct FromIterator<std::vector<A>>
   static std::vector<A> from_iter(It&& it)
   {
     std::vector<A> c;
-    c.reserve(it.size_);
+    auto hint = it.size_hint();
+    if (std::get<1>(hint).is_some())
+    {
+      c.reserve(std::move(std::get<1>(hint)).unwrap());
+    }
+    else
+    {
+      c.reserve(std::get<0>(hint));
+    }
     while (true)
     {
       auto z = it.next();
@@ -169,10 +179,17 @@ struct Iterator
   using type = T;
   using function_type = NextFun;
 
+  Iterator(NextFun&& f, std::size_t size) : f_(f), size_(size){};
+
   Option<T> next()
   {
     return f_();
   };
+
+  std::pair<usize, Option<usize>> size_hint() const
+  {
+    return { size_, Option<usize>() };
+  }
 
   template <typename F>
   auto map(F&& f)
@@ -241,14 +258,20 @@ struct Iterator
     return RangeIter<T, decltype(this)>::end();
   }
 
+private:
+  template <typename Z, typename U>
+  friend struct RangeIter;
+  template <typename Z>
+  friend struct FromIterator;
+
   NextFun f_;
-  std::size_t size_;
+  usize size_;
 };
 
 template <typename Z, typename RealNextFun>
 static auto make_iterator(RealNextFun&& v, std::size_t size)
 {
-  return Iterator<Z, RealNextFun>{ v, size };
+  return Iterator<Z, RealNextFun>{ std::forward<RealNextFun>(v), size };
 };
 
 }  // namespace detail
