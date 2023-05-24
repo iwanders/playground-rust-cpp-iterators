@@ -180,7 +180,7 @@ struct Iterator
     // Here the return type is the return of f(f_()), in an option.
     auto old_f = std::move(f_);  // rip out the guts of the previous
     auto generator = [f, old_f]() mutable -> Option<U> { return old_f().map(f); };
-    return make_iterator<U>(std::move(generator));
+    return make_iterator<U>(std::move(generator), size_);
   }
 
   template <typename F>
@@ -188,7 +188,7 @@ struct Iterator
   {
     using U = std::invoke_result<F, T>::type;
     auto generator = [this, f]() mutable -> Option<U> { return this->next().map(f); };
-    return make_iterator<U>(std::move(generator));
+    return make_iterator<U>(std::move(generator), size_);
   }
 
   template <typename F>
@@ -250,12 +250,13 @@ struct Iterator
   }
 
   NextFun f_;
+  std::size_t size_;
 };
 
 template <typename Z, typename RealNextFun>
-static auto make_iterator(RealNextFun&& v)
+static auto make_iterator(RealNextFun&& v, std::size_t size)
 {
-  return Iterator<Z, RealNextFun>{ v };
+  return Iterator<Z, RealNextFun>{ v, size };
 };
 
 }  // namespace detail
@@ -268,6 +269,7 @@ auto iter(const C& container)
 {
   auto start = container.begin();
   auto end = container.end();
+  const auto size = container.size();
   return detail::make_iterator<typename C::value_type>(
       [start, end]() mutable
       {
@@ -281,7 +283,7 @@ auto iter(const C& container)
         {
           return detail::Option<typename C::value_type>();
         }
-      });
+      }, size);
 }
 
 }  // namespace rust
