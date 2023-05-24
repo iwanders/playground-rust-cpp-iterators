@@ -14,13 +14,14 @@ struct FromIterator;
 template <typename A>
 struct FromIterator<std::vector<A>>
 {
-  template <typename F>
-  static std::vector<A> from_iter(F&& f)
+  template <typename It>
+  static std::vector<A> from_iter(It&& it)
   {
     std::vector<A> c;
+    c.reserve(it.size_);
     while (true)
     {
-      auto z = f();
+      auto z = it.next();
       if (z.is_some())
       {
         c.push_back(std::move(z).unwrap());
@@ -111,16 +112,16 @@ SS& operator<<(SS& os, const Option<T>& opt)
 }
 
 /// Helper struct to allow return type conversion.
-template <typename F>
+template <typename It>
 struct Collector
 {
   template <class Container>
   operator Container()
   {
-    return FromIterator<Container>::from_iter(f_);
+    return FromIterator<Container>::from_iter(it_);
   }
 
-  F f_;
+  It it_;
 };
 
 template <typename T, typename IterPtr>
@@ -173,18 +174,6 @@ struct Iterator
     return f_();
   };
 
-  /*
-  template <typename F>
-  auto map(F&& f) &&
-  {
-    using U = std::invoke_result<F, T>::type;
-    // Here the return type is the return of f(f_()), in an option.
-    auto old_f = std::move(f_);  // rip out the guts of the previous
-    auto generator = [f, old_f]() mutable -> Option<U> { return old_f().map(f); };
-    return make_iterator<U>(std::move(generator), size_);
-  }
-  */
-
   template <typename F>
   auto map(F&& f)
   {
@@ -215,12 +204,11 @@ struct Iterator
   {
     if constexpr (std::is_same<CollectType, void>::value)
     {
-      auto old_f = std::move(f_);  // rip out the guts of the previous
-      return Collector{ [old_f]() mutable { return old_f(); } };
+      return Collector{ std::move(*this) };
     }
     else
     {
-      return FromIterator<CollectType>::from_iter(f_);
+      return FromIterator<CollectType>::from_iter(std::move(*this));
     }
   }
 
