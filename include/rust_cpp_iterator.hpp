@@ -173,6 +173,7 @@ struct Iterator
     return f_();
   };
 
+  /*
   template <typename F>
   auto map(F&& f) &&
   {
@@ -182,9 +183,10 @@ struct Iterator
     auto generator = [f, old_f]() mutable -> Option<U> { return old_f().map(f); };
     return make_iterator<U>(std::move(generator), size_);
   }
+  */
 
   template <typename F>
-  auto map(F&& f) &
+  auto map(F&& f)
   {
     using U = std::invoke_result<F, T>::type;
     auto generator = [this, f]() mutable -> Option<U> { return this->next().map(f); };
