@@ -20,14 +20,14 @@ struct FromIterator<std::vector<A>>
   static std::vector<A> from_iter(It&& it)
   {
     std::vector<A> c;
-    auto hint = it.size_hint();
-    if (std::get<1>(hint).is_some())
+    auto [lower, upper] = it.size_hint();
+    if (std::size_t limit; upper.Some(limit))
     {
-      c.reserve(std::move(std::get<1>(hint)).unwrap());
+      c.reserve(limit);
     }
     else
     {
-      c.reserve(std::get<0>(hint));
+      c.reserve(lower);
     }
     while (true)
     {
