@@ -265,7 +265,7 @@ struct Iterator
     return make_iterator<U>(std::move(generator), size_);
   }
 
-  template <typename F>
+  template <std::predicate<T> F>
   bool any(F&& f) &&
   {
     using U = std::invoke_result<F, T>::type;
