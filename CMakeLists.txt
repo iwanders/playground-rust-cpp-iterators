@@ -5,6 +5,7 @@ project(RustCppIterators VERSION 0.0.1)
 add_library(rust_cpp_iterators INTERFACE)
 
 target_compile_features(rust_cpp_iterators INTERFACE cxx_std_20)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 target_include_directories(rust_cpp_iterators
   INTERFACE
