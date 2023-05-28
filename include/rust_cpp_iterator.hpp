@@ -98,6 +98,25 @@ struct Option
     return !is_some();
   }
 
+  bool Some(T& x) &
+  {
+    if (populated_)
+    {
+      x = v_;
+      return true;
+    }
+    return false;
+  }
+  bool Some(T& x) &&
+  {
+    if (populated_)
+    {
+      x = std::move(v_);
+      return true;
+    }
+    return false;
+  }
+
   Option(const T& v) : v_{ v }, populated_{ true } {};
   Option(T&& v) : v_{ v }, populated_{ true } {};
   Option() : populated_{ false } {};
