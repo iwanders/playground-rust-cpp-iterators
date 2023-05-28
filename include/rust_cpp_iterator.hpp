@@ -106,6 +106,24 @@ struct Option
   T v_;
 };
 
+template <std::size_t Index, typename T>
+std::tuple_element_t<Index, Option<T>>& get(Option<T>& opt)
+{
+  if (opt.is_some())
+  {
+    return opt.get();
+  }
+  else
+  {
+    throw rust::panic_error("structured binding accessed empty optional");
+  }
+}
+template <std::size_t Index, typename T>
+std::tuple_element_t<Index, Option<T>> get(Option<T>&& opt)
+{
+  return std::forward<Option<T>>(opt).unwrap();
+}
+
 /// Make an Option printable.
 template <typename SS, typename T>
 SS& operator<<(SS& os, const Option<T>& opt)
@@ -303,3 +321,18 @@ auto iter(const C& container)
 }
 
 }  // namespace rust
+
+// mixing for structured bindings on options.
+namespace std
+{
+template <typename T>
+struct tuple_size<rust::Option<T>> : std::integral_constant<std::size_t, 1>
+{
+};
+
+template <typename T>
+struct tuple_element<0, rust::Option<T>>
+{
+  using type = T;
+};
+}  // namespace std

@@ -31,23 +31,52 @@ int main(int argc, char* argv[])
 
   {
     std::cout << "Test the option a bit" << std::endl;
-    // This shouldn't compile, get on an rvalue is invalid.
-    //  auto& z = rs::Option(3).get();
-    // But this should:
-    auto opt = rs::Option(3);
-    auto& z = opt.get();
-    auto x = std::move(opt).unwrap();
+    {
+      // This shouldn't compile, get on an rvalue is invalid.
+      //  auto& z = rs::Option(3).get();
+      // But this should:
+      auto opt = rs::Option(3);
+      auto& z = opt.get();
+      auto x = std::move(opt).unwrap();
+    }
 
-    opt = rs::Option<int>();
-    try
     {
-      auto bad = std::move(opt).unwrap();
+      auto opt = rs::Option<int>();
+      try
+      {
+        auto bad = std::move(opt).unwrap();
+      }
+      catch (const rs::panic_error& e)
+      {
+        std::cout << e.what() << std::endl;
+      }
+      std::cout << std::endl;
     }
-    catch (const rs::panic_error& e)
+
     {
-      std::cout << e.what() << std::endl;
+      {
+        auto opt = rs::Option(3);
+        //  auto& x = std::get<0>(opt);
+        //  std::cout << "x: " << x << std::endl;
+      }
+
+      {
+        auto opt = rs::Option(3);
+        auto& [x] = opt;
+        std::cout << "x: " << x << std::endl;
+      }
+
+      {
+        auto opt = rs::Option(3);
+        auto [x] = opt;
+        std::cout << "x: " << x << std::endl;
+      }
+
+      {
+        auto [x] = rs::Option(3);
+        std::cout << "x: " << x << std::endl;
+      }
     }
-    std::cout << std::endl;
   }
 
   {
