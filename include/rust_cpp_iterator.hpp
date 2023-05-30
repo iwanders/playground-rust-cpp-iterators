@@ -73,14 +73,6 @@ struct FromIterator<std::vector<A>>
   }
 };
 
-namespace ops
-{
-
-template <typename A, typename B>
-struct Add;
-
-}
-
 template <typename A, typename B>
 concept Add = requires(A a, B b)
 {
@@ -185,18 +177,24 @@ std::tuple_element_t<Index, Option<T>> get(Option<T>&& opt)
   return std::forward<Option<T>>(opt).unwrap();
 }
 
+template <typename T>
+std::string to_string(const Option<T>& opt) {
+  using std::to_string;
+  if (opt.populated_)
+  {
+    return std::string("Some(") + to_string(opt.v_) + ")";
+  }
+  else
+  {
+    return "None";
+  }
+}
+
 /// Make an Option printable.
 template <typename SS, typename T>
 SS& operator<<(SS& os, const Option<T>& opt)
 {
-  if (opt.populated_)
-  {
-    os << "Some(" << opt.v_ << ")";
-  }
-  else
-  {
-    os << "None";
-  }
+  os << to_string(opt);
   return os;
 }
 
