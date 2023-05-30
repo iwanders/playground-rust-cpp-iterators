@@ -27,9 +27,9 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <cmath>
+#include <compare>
 #include <iostream>
 #include <vector>
-#include <compare>
 
 #include "rust_cpp_iterator.hpp"
 
@@ -224,9 +224,17 @@ int main(int argc, char* argv[])
     const std::vector<int> a{ 2, 4, 6 };
     const auto has_even = rs::iter(a).any([](const char& v) { return v % 2 == 0; });
     std::cout << "has_even:" << has_even << std::endl;
-    const auto has_odd = rs::iter(a).any([](const auto& v) { return v % 2; });
+    const auto has_odd = rs::iter(a).any([](const auto& v) { return v % 2 == 0; });
     std::cout << "has_odd:" << has_odd << std::endl;
     std::cout << std::endl;
+  }
+
+  {
+    struct S
+    {
+    };  // clearly not supporting Add
+    const std::vector<S> a{ S{}, S{} };
+    //  auto sum = rs::iter(a).sum();
   }
 
   return 0;

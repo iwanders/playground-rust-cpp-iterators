@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 #include <vector>
 
-
 namespace rust
 {
 
@@ -74,6 +73,20 @@ struct FromIterator<std::vector<A>>
   }
 };
 
+namespace ops
+{
+
+template <typename A, typename B>
+struct Add;
+
+}
+
+template <typename A, typename B>
+concept Add = requires(A a, B b)
+{
+  a + b;
+};
+
 struct panic_error : std::runtime_error
 {
   panic_error(const char* s) : std::runtime_error(s){};
@@ -95,7 +108,7 @@ struct Option
     return v_;
   }
 
-  template <typename F>
+  template <std::invocable<T> F>
   Option<typename std::invoke_result<F, T>::type> map(F&& f)
   {
     using U = std::invoke_result<F, T>::type;
@@ -257,7 +270,7 @@ struct Iterator
     return { size_, Option<usize>() };
   }
 
-  template <typename F>
+  template <std::invocable<T> F>
   auto map(F&& f)
   {
     using U = std::invoke_result<F, T>::type;
@@ -295,7 +308,7 @@ struct Iterator
     }
   }
 
-  auto sum() &&
+  auto sum() && requires Add<T, T>
   {
     auto first = f_();
     if (first.is_some())
