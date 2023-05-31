@@ -220,6 +220,17 @@ int main(int argc, char* argv[])
   }
 
   {
+    std::cout << "Check if range based for reference works." << std::endl;
+    std::vector<int> a{ 1, 2, 3, 4 };
+    for (auto& v : rs::iter_mut(a))
+    {
+      *v = *v * *v;
+      std::cout << " " << *v;
+    }
+    std::cout << std::endl;
+  }
+
+  {
     std::cout << "Check any value is odd." << std::endl;
     const std::vector<int> a{ 2, 4, 6 };
     const auto has_even = rs::iter(a).any([](const char& v) { return v % 2 == 0; });

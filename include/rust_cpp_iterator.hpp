@@ -214,7 +214,7 @@ struct Collector
 template <typename T, typename IterPtr>
 struct RangeIter
 {
-  T operator*()
+  T& operator*()
   {
     return opt_.get();  // bah, bah, bah.
   }
@@ -374,6 +374,29 @@ auto iter(const C& container)
         else
         {
           return detail::Option<typename C::value_type>();
+        }
+      },
+      size);
+}
+
+template <typename C>
+auto iter_mut(C& container)
+{
+  auto start = container.begin();
+  auto end = container.end();
+  const auto size = container.size();
+  return detail::make_iterator<typename C::value_type*>(
+      [start, end]() mutable
+      {
+        if (start != end)
+        {
+          auto v = &(*start);
+          start++;
+          return detail::Option(v);
+        }
+        else
+        {
+          return detail::Option<typename C::value_type*>();
         }
       },
       size);
