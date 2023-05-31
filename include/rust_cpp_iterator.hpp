@@ -34,6 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 #include <vector>
 
+// iter() -> const T*
+// iter_mut() -> T*
+// drain() -> T
+
 namespace rust
 {
 
@@ -143,6 +147,7 @@ struct Option
     }
     return false;
   }
+
   bool Some(T& x) &&
   {
     if (populated_)
@@ -153,8 +158,11 @@ struct Option
     return false;
   }
 
+  template <typename... Args>
+  Option(Args... v) : v_(v...), populated_{ true } {};
+
   Option(const T& v) : v_{ v }, populated_{ true } {};
-  Option(T&& v) : v_{ v }, populated_{ true } {};
+  //  Option(T&& v) : v_{ v }, populated_{ true } {};
   Option() : populated_{ false } {};
 
   bool populated_{ false };
@@ -294,6 +302,27 @@ struct Iterator
       value = next();
     }
     return false;
+  }
+
+  auto enumerate() &&
+  {
+    std::size_t i = 0;
+    auto f = std::move(f_);
+    using U = std::tuple<usize, T>;
+    auto generator = [this, f, i]() mutable -> Option<U>
+    {
+      if (T z; f().Some(z))
+      {
+        auto res = Option<U>(i, std::move(z));
+        i++;
+        return res;
+      }
+      else
+      {
+        return Option<U>();
+      }
+    };
+    return make_iterator<U>(std::move(generator), size_);
   }
 
   template <typename CollectType = void>

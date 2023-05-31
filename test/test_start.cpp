@@ -241,6 +241,17 @@ int main(int argc, char* argv[])
   }
 
   {
+    std::cout << "Check enumerate." << std::endl;
+    std::vector<int> a{ 1, 2, 3, 4 };
+    for (const auto& [i, v] : rs::iter(a).enumerate())
+    {
+      std::cout << "i: " << i << " -> " << v << std::endl;
+      ;
+    }
+    std::cout << std::endl;
+  }
+
+  {
     std::cout << "Check any value is odd." << std::endl;
     const std::vector<int> a{ 2, 4, 6 };
     const auto has_even = rs::iter(a).any([](const char& v) { return v % 2 == 0; });
