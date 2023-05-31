@@ -37,6 +37,7 @@ namespace rust
 {
 
 using usize = std::size_t;
+using isize = std::int64_t;
 
 template <typename A>
 struct FromIterator;
@@ -178,7 +179,8 @@ std::tuple_element_t<Index, Option<T>> get(Option<T>&& opt)
 }
 
 template <typename T>
-std::string to_string(const Option<T>& opt) {
+std::string to_string(const Option<T>& opt)
+{
   using std::to_string;
   if (opt.populated_)
   {
@@ -352,21 +354,55 @@ static auto make_iterator(RealNextFun&& v, std::size_t size)
 };
 
 template <typename T>
-struct Slice {
-  static Slice<T> from_raw_parts(T* data, usize len) {
+struct Slice
+{
+  static Slice<T> from_raw_parts(T* data, usize len)
+  {
     Slice<T> res;
     res.start_ = data;
     res.len_ = len;
     return res;
   }
 
-  T& operator[](std::size_t index) {
+  T& operator[](usize index)
+  {
     return start_[index];
   }
 
-  std::size_t len() const {
+  /// Take a subslice
+  template <typename A = std::initializer_list<int>, typename B = std::initializer_list<int>>
+  Slice<T> operator()(A a, B b)
+  {
+    using std::to_string;
+    usize start = 0;
+    usize end = len();
+    if constexpr (!std::is_same<A, std::initializer_list<int>>::value)
+    {
+      start = a;
+    }
+    if constexpr (!std::is_same<B, std::initializer_list<int>>::value)
+    {
+      end = b;
+    }
+    if (start > end)
+    {
+      throw panic_error("slice index  starts at " + to_string(start) + " but ends at " + to_string(end));
+    }
+    if (end > len())
+    {
+      throw panic_error("range end index " + to_string(end) + " out of range for slice of length " + to_string(len_));
+    }
+    Slice<T> res;
+    res.start_ = start_ + start;
+    res.len_ = end - start;
+    return res;
+  }
+
+  std::size_t len() const
+  {
     return len_;
   }
+
 private:
   T* start_;
   std::size_t len_;
@@ -381,7 +417,8 @@ template <typename T>
 using Slice = detail::Slice<T>;
 
 template <typename C>
-auto slice(C& container) {
+auto slice(C& container)
+{
   return detail::Slice<typename C::value_type>::from_raw_parts(container.data(), container.size());
 }
 

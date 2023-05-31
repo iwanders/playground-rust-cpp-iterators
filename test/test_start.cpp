@@ -39,6 +39,16 @@ std::string type_string()
   return __PRETTY_FUNCTION__;
 }
 
+#define ASSERT_EQ(a, b)                                                                                                \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    if (!(a == b))                                                                                                     \
+    {                                                                                                                  \
+      std::cerr << __FILE__ << ":" << __LINE__ << " test failed: a != b (a:" << a << ", b:" << b << ")" << std::endl;  \
+      std::exit(1);                                                                                                    \
+    }                                                                                                                  \
+  } while (0)
+
 int main(int argc, char* argv[])
 {
   namespace rs = rust;
@@ -248,7 +258,6 @@ int main(int argc, char* argv[])
     //  auto sum = rs::iter(a).sum();
   }
 
-
   {
     std::cout << "Check if range based for reference works." << std::endl;
     std::vector<int> a{ 1, 2, 3, 4 };
@@ -256,8 +265,29 @@ int main(int argc, char* argv[])
     std::cout << "Slice len: " << slice.len() << std::endl;
     std::cout << "Slice[2]: " << slice[2] << std::endl;
     std::cout << std::endl;
-  }
 
+    {
+      // slice[2..]
+      auto subslice = slice(2, {});
+      ASSERT_EQ(subslice.len(), 2);
+      ASSERT_EQ(subslice[0], 3);
+      ASSERT_EQ(subslice[1], 4);
+    }
+    {
+      // slice[..2]
+      auto subslice = slice({}, 2);
+      ASSERT_EQ(subslice.len(), 2);
+      ASSERT_EQ(subslice[0], 1);
+      ASSERT_EQ(subslice[1], 2);
+    }
+    {
+      // slice[1..3]
+      auto subslice = slice(1, 3);
+      ASSERT_EQ(subslice.len(), 2);
+      ASSERT_EQ(subslice[0], 2);
+      ASSERT_EQ(subslice[1], 3);
+    }
+  }
 
   return 0;
 }
