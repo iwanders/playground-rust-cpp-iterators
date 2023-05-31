@@ -300,5 +300,28 @@ int main(int argc, char* argv[])
     std::cout << std::endl;
   }
 
+  //  {
+  //  std::cout << "Non const iter!" << std::endl;
+  //  std::vector<int> a{ 1, 2, 3, 4 };
+  //  auto slice = rs::slice(a);
+  //  for (auto& x : slice.iter())
+  //  {
+  //  x = x * x;
+  //  }
+  //  std::cout << "s: " << slice << std::endl;
+  //  std::cout << std::endl;
+  //  }
+
+  {
+    std::cout << "Check if sorting slice works" << std::endl;
+    std::vector<int> a{ 1, 4, 2, 3 };
+    auto slice = rs::slice(a);
+    std::cout << "s: " << slice << std::endl;
+    slice.sort();
+    std::cout << "s: " << slice << std::endl;
+
+    std::cout << std::endl;
+  }
+
   return 0;
 }

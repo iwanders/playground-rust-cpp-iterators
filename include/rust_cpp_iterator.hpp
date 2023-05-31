@@ -27,6 +27,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #pragma once
+#include <algorithm>
 #include <exception>
 #include <iostream>
 #include <string>
@@ -403,7 +404,7 @@ struct Slice
     return len_;
   }
 
-  auto iter()
+  auto iter() const
   {
     auto start = start_;
     auto end = start_ + len_;
@@ -424,10 +425,36 @@ struct Slice
         len_);
   }
 
+  void sort() requires std::totally_ordered<T>
+  {
+    std::ranges::stable_sort(start_, start_ + len_);
+  }
+
 private:
   T* start_;
   std::size_t len_;
 };
+
+template <typename T>
+std::string to_string(const Slice<T>& slice)
+{
+  using std::to_string;
+  std::string s = "[";
+  for (const auto& v : slice.iter())
+  {
+    s += " " + to_string(v);
+  }
+  s += "]";
+  return s;
+}
+
+/// Make an Slice printable.
+template <typename SS, typename T>
+SS& operator<<(SS& os, const Slice<T>& slice)
+{
+  os << to_string(slice);
+  return os;
+}
 
 }  // namespace detail
 
