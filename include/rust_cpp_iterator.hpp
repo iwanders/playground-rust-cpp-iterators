@@ -403,6 +403,27 @@ struct Slice
     return len_;
   }
 
+  auto iter()
+  {
+    auto start = start_;
+    auto end = start_ + len_;
+    return detail::make_iterator<T>(
+        [start, end]() mutable
+        {
+          if (start != end)
+          {
+            auto v = *start;
+            start++;
+            return detail::Option(std::move(v));
+          }
+          else
+          {
+            return detail::Option<T>();
+          }
+        },
+        len_);
+  }
+
 private:
   T* start_;
   std::size_t len_;

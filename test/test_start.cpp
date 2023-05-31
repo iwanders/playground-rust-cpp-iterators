@@ -289,5 +289,16 @@ int main(int argc, char* argv[])
     }
   }
 
+  {
+    std::cout << "Check if iter over slice works" << std::endl;
+    std::vector<int> a{ 1, 2, 3, 4 };
+    auto slice = rs::slice(a);
+    for (const auto& x : slice.iter())
+    {
+      std::cout << " " << x;
+    }
+    std::cout << std::endl;
+  }
+
   return 0;
 }
