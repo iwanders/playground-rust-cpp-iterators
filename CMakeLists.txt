@@ -4,6 +4,10 @@ project(RustCppIterators VERSION 0.0.1)
 
 add_library(rust_cpp_iterators INTERFACE)
 
+
+# https://en.cppreference.com/w/cpp/language/operators#Array_subscript_operator
+# https://en.cppreference.com/w/cpp/compiler_support
+# gcc 12, clang 15 for foo[1,2,3]
 target_compile_features(rust_cpp_iterators INTERFACE cxx_std_20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

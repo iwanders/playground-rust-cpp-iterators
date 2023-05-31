@@ -351,10 +351,39 @@ static auto make_iterator(RealNextFun&& v, std::size_t size)
   return Iterator<Z, RealNextFun>{ std::forward<RealNextFun>(v), size };
 };
 
+template <typename T>
+struct Slice {
+  static Slice<T> from_raw_parts(T* data, usize len) {
+    Slice<T> res;
+    res.start_ = data;
+    res.len_ = len;
+    return res;
+  }
+
+  T& operator[](std::size_t index) {
+    return start_[index];
+  }
+
+  std::size_t len() const {
+    return len_;
+  }
+private:
+  T* start_;
+  std::size_t len_;
+};
+
 }  // namespace detail
 
 template <typename T>
 using Option = detail::Option<T>;
+
+template <typename T>
+using Slice = detail::Slice<T>;
+
+template <typename C>
+auto slice(C& container) {
+  return detail::Slice<typename C::value_type>::from_raw_parts(container.data(), container.size());
+}
 
 template <typename C>
 auto iter(const C& container)
