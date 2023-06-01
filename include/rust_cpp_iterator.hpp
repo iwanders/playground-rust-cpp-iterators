@@ -604,6 +604,16 @@ struct Borrow<const char*>
   }
 };
 
+template <rust::DataSize T>
+struct Borrow<T>
+{
+  static detail::Slice<const typename T::value_type> borrow(const T& s)
+  {
+    return detail::Slice<const typename T::value_type>::from_raw_parts(s.data(), s.size());
+    ;
+  }
+};
+
 template <typename A>
 concept Borrowable = requires(A a)
 {
@@ -620,12 +630,6 @@ template <typename C>
 auto slice(C& container) requires rust::DataSize<C>
 {
   return detail::Slice<typename C::value_type>::from_raw_parts(container.data(), container.size());
-}
-
-template <typename C>
-auto slice(const C& container) requires rust::DataSize<C>
-{
-  return detail::Slice<const typename C::value_type>::from_raw_parts(container.data(), container.size());
 }
 
 template <typename C>
