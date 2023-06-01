@@ -264,8 +264,8 @@ int main(int argc, char* argv[])
   {
     std::cout << "Drain should yield values." << std::endl;
     {
-      //  std::vector<int> _test = rs::drain(std::vector<int>{ 1, 2, 3, 4 }).collect<std::vector<int>>();
-      //  std::vector<int> _test2 = rs::drain(std::vector<int>{ 1, 2, 3, 4 }).collect();
+      std::vector<int> _test = rs::drain(std::vector<int>{ 1, 2, 3, 4 }).collect<std::vector<int>>();
+      std::vector<int> _test2 = rs::drain(std::vector<int>{ 1, 2, 3, 4 }).collect();
     }
 
     auto z = rs::drain(std::vector<int>{ 1, 2, 3, 4 });

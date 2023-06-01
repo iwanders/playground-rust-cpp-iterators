@@ -168,6 +168,8 @@ struct Option
     return false;
   }
 
+  auto operator<=>(const Option<T>&) const = default;
+
   template <typename... Args>
   Option(Args... v) : v_(v...), populated_{ true } {};
 
@@ -580,23 +582,27 @@ auto iter_mut(C& container)
 template <typename C>
 auto drain(C&& container)
 {
-  C our_container_now = container;
-  //  auto start = our_container_now.begin();
-  //  auto end = our_container_now.end();
+  auto start = Option<typename C::iterator>();
+  auto end = Option<typename C::iterator>();
   const auto size = container.size();
-  auto f = [our_container_now = container]() mutable -> Option<typename C::value_type>
+  auto f = [container, start, end]() mutable -> Option<typename C::value_type>
   {
-    // Is this static here fragile!?
-    static auto start = our_container_now.begin();
-    static auto end = our_container_now.end();
-    if (start != end)
+    if (!start.is_some())
     {
-      auto v = std::move(*start);
-      std::cout << "v: " << v << std::endl;
+      start = Option<typename C::iterator>(container.begin());
+    }
+    if (!end.is_some())
+    {
+      end = Option<typename C::iterator>(container.end());
+    }
+
+    auto& start_it = start.get();
+    auto& end_it = end.get();
+    if (start_it != end_it)
+    {
+      auto v = std::move(*start_it);
       auto res = Option<typename C::value_type>(std::move(v));
-      std::cout << "res: " << res << std::endl;
-      //  std::abort();
-      start++;
+      start_it++;
       return res;
     }
     else
