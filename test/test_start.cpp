@@ -245,7 +245,7 @@ int main(int argc, char* argv[])
     std::vector<int> a{ 1, 2, 3, 4 };
     for (const auto& [i, v] : rs::iter(a).enumerate())
     {
-      std::cout << "i: " << i << " -> " << v << std::endl;
+      std::cout << "i: " << i << " -> " << *v << std::endl;
       ;
     }
     std::cout << std::endl;
@@ -258,6 +258,34 @@ int main(int argc, char* argv[])
     std::cout << "has_even:" << has_even << std::endl;
     const auto has_odd = rs::iter(a).any([](const int* v) { return *v % 2 == 0; });
     std::cout << "has_odd:" << has_odd << std::endl;
+    std::cout << std::endl;
+  }
+
+  {
+    std::cout << "Drain should yield values." << std::endl;
+    {
+      //  std::vector<int> _test = rs::drain(std::vector<int>{ 1, 2, 3, 4 }).collect<std::vector<int>>();
+      //  std::vector<int> _test2 = rs::drain(std::vector<int>{ 1, 2, 3, 4 }).collect();
+    }
+
+    auto z = rs::drain(std::vector<int>{ 1, 2, 3, 4 });
+    //  std::cout << type_string<decltype(z)::function_type>() << std::endl;
+    std::cout << "z.next()" << z.next() << std::endl;
+    std::cout << "z.next()" << z.next() << std::endl;
+    std::cout << "z.next()" << z.next() << std::endl;
+    std::cout << std::endl;
+  }
+
+  {
+    std::cout << "Drain into map." << std::endl;
+
+    auto z =
+        rs::drain(std::vector<int>{ 1, 2, 3, 4 }).map([](const int& v) { return v * v; }).collect<std::vector<float>>();
+    for (auto& x : z)
+    {
+      std::cout << " " << x << std::endl;
+      ;
+    }
     std::cout << std::endl;
   }
 
@@ -306,22 +334,22 @@ int main(int argc, char* argv[])
     auto slice = rs::slice(a);
     for (const auto& x : slice.iter())
     {
-      std::cout << " " << x;
+      std::cout << " " << *x;
     }
     std::cout << std::endl;
   }
 
-  //  {
-  //  std::cout << "Non const iter!" << std::endl;
-  //  std::vector<int> a{ 1, 2, 3, 4 };
-  //  auto slice = rs::slice(a);
-  //  for (auto& x : slice.iter())
-  //  {
-  //  x = x * x;
-  //  }
-  //  std::cout << "s: " << slice << std::endl;
-  //  std::cout << std::endl;
-  //  }
+  {
+    std::cout << "Non const iter!" << std::endl;
+    std::vector<int> a{ 1, 2, 3, 4 };
+    auto slice = rs::slice(a);
+    for (auto* x : slice.iter_mut())
+    {
+      *x = *x * *x;
+    }
+    std::cout << "s: " << slice << std::endl;
+    std::cout << std::endl;
+  }
 
   {
     std::cout << "Check if sorting slice works" << std::endl;

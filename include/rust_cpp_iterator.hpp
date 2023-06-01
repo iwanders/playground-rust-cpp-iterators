@@ -39,7 +39,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // iter_mut(c) -> Iterator<T*>
 // drain(std::move(c)) -> Iterator<T>
 
-namespace rust {
+namespace rust
+{
 
 using usize = std::size_t;
 
@@ -95,13 +96,13 @@ namespace detail
 
 using std::to_string;
 template <typename T>
-std::string to_string(T* ptr){
+std::string to_string(T* ptr)
+{
   std::string res;
   res += "0x";
   res += to_string(reinterpret_cast<std::uint64_t>(ptr));
   return res;
 }
-
 
 template <typename T>
 struct Option
@@ -297,7 +298,7 @@ struct Iterator
 
   auto copied()
   {
-    return map([](const auto& v) {return *v;});
+    return map([](const auto& v) { return *v; });
     //  using U = std::invoke_result<F, T>::type;
     //  auto generator = [this, f]() mutable -> Option<U> { return this->next().map(f); };
     //  return make_iterator<U>(std::move(generator), size_);
@@ -399,6 +400,29 @@ static auto make_iterator(RealNextFun&& v, std::size_t size)
   return Iterator<Z, RealNextFun>{ std::forward<RealNextFun>(v), size };
 };
 
+template <typename Z, typename RawIter>
+static auto make_iterator(RawIter&& start_, RawIter&& end_, usize size)
+{
+  auto start = start_;
+  auto end = end_;
+  //  const auto size = container.size();
+  return detail::make_iterator<Z>(
+      [start, end]() mutable
+      {
+        if (start != end)
+        {
+          auto v = &(*start);
+          start++;
+          return detail::Option(v);
+        }
+        else
+        {
+          return detail::Option<Z>();
+        }
+      },
+      size);
+}
+
 template <typename T>
 struct Slice
 {
@@ -453,18 +477,39 @@ struct Slice
   {
     auto start = start_;
     auto end = start_ + len_;
-    return detail::make_iterator<T>(
+    return detail::make_iterator<const T*>(
         [start, end]() mutable
         {
           if (start != end)
           {
-            auto v = *start;
+            auto v = start;
             start++;
-            return detail::Option(std::move(v));
+            return detail::Option(static_cast<const T*>(v));
           }
           else
           {
-            return detail::Option<T>();
+            return detail::Option<const T*>();
+          }
+        },
+        len_);
+  }
+
+  auto iter_mut() const
+  {
+    auto start = start_;
+    auto end = start_ + len_;
+    return detail::make_iterator<T*>(
+        [start, end]() mutable
+        {
+          if (start != end)
+          {
+            auto v = start;
+            start++;
+            return detail::Option(v);
+          }
+          else
+          {
+            return detail::Option<T*>();
           }
         },
         len_);
@@ -483,11 +528,10 @@ private:
 template <typename T>
 std::string to_string(const Slice<T>& slice)
 {
-  using std::to_string;
   std::string s = "[";
   for (const auto& v : slice.iter())
   {
-    s += " " + to_string(v);
+    s += " " + to_string(*v);
   }
   s += "]";
   return s;
@@ -521,21 +565,7 @@ auto iter(const C& container)
   auto start = container.cbegin();
   auto end = container.cend();
   const auto size = container.size();
-  return detail::make_iterator<const typename C::value_type*>(
-      [start, end]() mutable
-      {
-        if (start != end)
-        {
-          auto v = &(*start);
-          start++;
-          return detail::Option(std::move(v));
-        }
-        else
-        {
-          return detail::Option<const typename C::value_type*>();
-        }
-      },
-      size);
+  return detail::make_iterator<const typename C::value_type*>(start, end, size);
 }
 
 template <typename C>
@@ -544,21 +574,37 @@ auto iter_mut(C& container)
   auto start = container.begin();
   auto end = container.end();
   const auto size = container.size();
-  return detail::make_iterator<typename C::value_type*>(
-      [start, end]() mutable
-      {
-        if (start != end)
-        {
-          auto v = &(*start);
-          start++;
-          return detail::Option(v);
-        }
-        else
-        {
-          return detail::Option<typename C::value_type*>();
-        }
-      },
-      size);
+  return detail::make_iterator<typename C::value_type*>(start, end, size);
+}
+
+template <typename C>
+auto drain(C&& container)
+{
+  C our_container_now = container;
+  //  auto start = our_container_now.begin();
+  //  auto end = our_container_now.end();
+  const auto size = container.size();
+  auto f = [our_container_now = container]() mutable -> Option<typename C::value_type>
+  {
+    // Is this static here fragile!?
+    static auto start = our_container_now.begin();
+    static auto end = our_container_now.end();
+    if (start != end)
+    {
+      auto v = std::move(*start);
+      std::cout << "v: " << v << std::endl;
+      auto res = Option<typename C::value_type>(std::move(v));
+      std::cout << "res: " << res << std::endl;
+      //  std::abort();
+      start++;
+      return res;
+    }
+    else
+    {
+      return Option<typename C::value_type>();
+    }
+  };
+  return detail::make_iterator<typename C::value_type>(std::move(f), size);
 }
 
 }  // namespace rust
