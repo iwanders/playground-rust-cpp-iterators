@@ -34,15 +34,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <utility>
 #include <vector>
 
-// iter() -> const T*
-// iter_mut() -> T*
-// drain() -> T
+// Container c{1,2,3};
+// iter(c) -> Iterator<const T*>
+// iter_mut(c) -> Iterator<T*>
+// drain(std::move(c)) -> Iterator<T>
 
-namespace rust
-{
+namespace rust {
 
 using usize = std::size_t;
-using isize = std::int64_t;
 
 template <typename A>
 struct FromIterator;
@@ -93,6 +92,16 @@ struct panic_error : std::runtime_error
 
 namespace detail
 {
+
+using std::to_string;
+template <typename T>
+std::string to_string(T* ptr){
+  std::string res;
+  res += "0x";
+  res += to_string(reinterpret_cast<std::uint64_t>(ptr));
+  return res;
+}
+
 
 template <typename T>
 struct Option
@@ -190,7 +199,6 @@ std::tuple_element_t<Index, Option<T>> get(Option<T>&& opt)
 template <typename T>
 std::string to_string(const Option<T>& opt)
 {
-  using std::to_string;
   if (opt.populated_)
   {
     return std::string("Some(") + to_string(opt.v_) + ")";
@@ -285,6 +293,14 @@ struct Iterator
     using U = std::invoke_result<F, T>::type;
     auto generator = [this, f]() mutable -> Option<U> { return this->next().map(f); };
     return make_iterator<U>(std::move(generator), size_);
+  }
+
+  auto copied()
+  {
+    return map([](const auto& v) {return *v;});
+    //  using U = std::invoke_result<F, T>::type;
+    //  auto generator = [this, f]() mutable -> Option<U> { return this->next().map(f); };
+    //  return make_iterator<U>(std::move(generator), size_);
   }
 
   template <std::predicate<T> F>
@@ -502,21 +518,21 @@ auto slice(C& container)
 template <typename C>
 auto iter(const C& container)
 {
-  auto start = container.begin();
-  auto end = container.end();
+  auto start = container.cbegin();
+  auto end = container.cend();
   const auto size = container.size();
-  return detail::make_iterator<typename C::value_type>(
+  return detail::make_iterator<const typename C::value_type*>(
       [start, end]() mutable
       {
         if (start != end)
         {
-          auto v = *start;
+          auto v = &(*start);
           start++;
           return detail::Option(std::move(v));
         }
         else
         {
-          return detail::Option<typename C::value_type>();
+          return detail::Option<const typename C::value_type*>();
         }
       },
       size);

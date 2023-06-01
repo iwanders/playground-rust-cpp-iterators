@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
   {
     std::cout << "Check we can make a mapped iterator" << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
-    auto it = rs::iter(a).map([](const auto& v) -> int { return v * v; });
+    auto it = rs::iter(a).map([](const auto& v) -> int { return *v * *v; });
     std::cout << type_string<decltype(it)::type>() << std::endl;
     std::cout << type_string<decltype(it)::function_type>() << std::endl;
 
@@ -176,18 +176,18 @@ int main(int argc, char* argv[])
     const std::vector<int> a{ 1, 2, 3, 4 };
 
     // Return type idiom, type inferred from conversion to the type on the left
-    std::vector<int> and_back = rs::iter(a).collect();
+    std::vector<int> and_back = rs::iter(a).copied().collect();
     // print it.
     print_vec(and_back);
 
     // type infered from the conversion needed to make the argument work.
-    print_vec(rs::iter(a).collect());
+    print_vec(rs::iter(a).copied().collect());
   }
 
   {
     std::cout << "Check if we can collect into an explicit type." << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
-    auto and_back = rs::iter(a).collect<std::vector<float>>();
+    auto and_back = rs::iter(a).copied().collect<std::vector<float>>();
     for (auto& v : and_back)
     {
       std::cout << v << ", ";
@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
     std::cout << "Check if we can chain maps and collects." << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
     auto our_map_it = rs::iter(a)
-                          .map([](const auto& v) { return static_cast<double>(v); })
+                          .map([](const auto& v) { return static_cast<double>(*v); })
                           .map([](const auto& v) { return v * v + 0.5; })
                           .map([](const auto& x) { return std::sqrt(x); });
     std::cout << "here be dragons: ";
@@ -215,14 +215,14 @@ int main(int argc, char* argv[])
   {
     std::cout << "Check if sum works" << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
-    auto sum = rs::iter(a).map([](const auto& v) { return v * v; }).sum();
+    auto sum = rs::iter(a).map([](const int* v) { return *v * *v; }).sum();
     std::cout << sum << std::endl;
   }
 
   {
     std::cout << "Check if range based for loop works." << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
-    for (const auto& v : rs::iter(a).map([](const auto& v) { return v * v; }))
+    for (const auto& v : rs::iter(a).map([](const int* v) { return *v * *v; }))
     {
       std::cout << " " << v;
     }
@@ -254,9 +254,9 @@ int main(int argc, char* argv[])
   {
     std::cout << "Check any value is odd." << std::endl;
     const std::vector<int> a{ 2, 4, 6 };
-    const auto has_even = rs::iter(a).any([](const char& v) { return v % 2 == 0; });
+    const auto has_even = rs::iter(a).any([](const int* v) { return *v % 2 == 0; });
     std::cout << "has_even:" << has_even << std::endl;
-    const auto has_odd = rs::iter(a).any([](const auto& v) { return v % 2 == 0; });
+    const auto has_odd = rs::iter(a).any([](const int* v) { return *v % 2 == 0; });
     std::cout << "has_odd:" << has_odd << std::endl;
     std::cout << std::endl;
   }
