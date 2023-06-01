@@ -49,6 +49,16 @@ std::string type_string()
     }                                                                                                                  \
   } while (0)
 
+#define ASSERT_NE(a, b)                                                                                                \
+  do                                                                                                                   \
+  {                                                                                                                    \
+    if (!(a != b))                                                                                                     \
+    {                                                                                                                  \
+      std::cerr << __FILE__ << ":" << __LINE__ << " test failed: a == b (a:" << a << ", b:" << b << ")" << std::endl;  \
+      std::exit(1);                                                                                                    \
+    }                                                                                                                  \
+  } while (0)
+
 int main(int argc, char* argv[])
 {
   namespace rs = rust;
@@ -360,6 +370,47 @@ int main(int argc, char* argv[])
     std::cout << "s: " << slice << std::endl;
 
     std::cout << std::endl;
+  }
+  {
+    std::cout << "Check if slice comparison slice works" << std::endl;
+    std::vector<int> a{ 1, 4, 2, 3 };
+    auto slice_a = rs::slice(a);
+    slice_a.sort();
+    std::vector<int> b{ 1, 2, 3, 4 };
+    auto slice_b = rs::slice(b);
+    ASSERT_EQ(slice_a, slice_b);
+    ASSERT_NE(slice_a, slice_b({}, 3));
+    ASSERT_EQ(slice_a({}, 3), slice_b({}, 3));
+
+    auto first_half = std::vector<int>{ 1, 2 };
+    auto second_half = std::vector<int>{ 3, 4 };
+    auto slice_first = rs::slice(first_half);
+    auto slice_second = rs::slice(second_half);
+    ASSERT_EQ(slice_a.starts_with(slice_first), true);
+    ASSERT_EQ(slice_a.starts_with(slice_second), false);
+    ASSERT_EQ(slice_a(2, {}).starts_with(slice_second), true);
+    std::cout << std::endl;
+  }
+
+  {
+    std::cout << "Check if slice comparison slice works" << std::endl;
+    std::vector<char> a{ 'H', 'e', 'l', 'l', 'o' };
+    auto slice_hello = rs::slice(a);
+    std::cout << "slice_hello: " << slice_hello << std::endl;
+    const auto str = "Hell";
+    auto slice_hell = rs::slice(str);
+    std::cout << "slice_hell: " << slice_hell << std::endl;
+    ASSERT_EQ(slice_hello.starts_with(slice_hell), true);
+    {
+      std::array<char, 3> arr_hel = { 'H', 'e', 'l' };
+      ASSERT_EQ(slice_hello.starts_with(rs::slice(arr_hel)), true);
+    }
+    {
+      std::array<char, 3> arr_hel = { 'H', 'e', 'l' };
+      ASSERT_EQ(slice_hello({}, 3).starts_with(rs::slice(arr_hel)), true);
+    }
+
+    //  ASSERT_EQ(slice_hello.starts_with(rs::slice("He")), true);
   }
 
   return 0;

@@ -85,6 +85,13 @@ concept Add = requires(A a, B b)
   a + b;
 };
 
+template <typename A>
+concept DataSize = requires(A a)
+{
+  a.data();
+  a.size();
+};
+
 struct panic_error : std::runtime_error
 {
   panic_error(const char* s) : std::runtime_error(s){};
@@ -441,9 +448,14 @@ struct Slice
     return start_[index];
   }
 
+  const T& operator[](usize index) const
+  {
+    return start_[index];
+  }
+
   /// Take a subslice
   template <typename A = std::initializer_list<int>, typename B = std::initializer_list<int>>
-  Slice<T> operator()(A a, B b)
+  Slice<T> operator()(A a, B b) const
   {
     using std::to_string;
     usize start = 0;
@@ -522,6 +534,30 @@ struct Slice
     std::ranges::stable_sort(start_, start_ + len_);
   }
 
+  template <typename T2>
+  bool operator==(const Slice<T2>& other) const requires std::equality_comparable_with<T, T2>
+  {
+    if (len() != other.len())
+    {
+      return false;
+    }
+    for (usize i = 0; i < len(); i++)
+    {
+      if (!((*this)[i] == other[i]))
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  template <typename T2>
+  bool starts_with(const Slice<T2>& needle) const requires std::equality_comparable_with<T, T2>
+  {
+    const auto n = needle.len();
+    return len() >= n && needle == (*this)({}, n);
+  }
+
 private:
   T* start_;
   std::size_t len_;
@@ -549,6 +585,31 @@ SS& operator<<(SS& os, const Slice<T>& slice)
 
 }  // namespace detail
 
+template <typename A>
+struct Borrow;
+
+template <>
+struct Borrow<const char*>
+{
+  static detail::Slice<const char> borrow(const char* s)
+  {
+    for (usize i = 0; i < std::numeric_limits<usize>::max(); i++)
+    {
+      if (s[i] == 0)
+      {
+        return detail::Slice<const char>::from_raw_parts(s, i);
+      }
+    }
+    throw panic_error("could not find end of string for borrow");
+  }
+};
+
+template <typename A>
+concept Borrowable = requires(A a)
+{
+  Borrow<A>::borrow(a);
+};
+
 template <typename T>
 using Option = detail::Option<T>;
 
@@ -556,9 +617,21 @@ template <typename T>
 using Slice = detail::Slice<T>;
 
 template <typename C>
-auto slice(C& container)
+auto slice(C& container) requires rust::DataSize<C>
 {
   return detail::Slice<typename C::value_type>::from_raw_parts(container.data(), container.size());
+}
+
+template <typename C>
+auto slice(const C& container) requires rust::DataSize<C>
+{
+  return detail::Slice<const typename C::value_type>::from_raw_parts(container.data(), container.size());
+}
+
+template <typename C>
+auto slice(const C& container) requires Borrowable<C>
+{
+  return Borrow<C>::borrow(container);
 }
 
 template <typename C>
