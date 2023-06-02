@@ -101,7 +101,6 @@ struct panic_error : std::runtime_error
 template <typename A>
 struct Borrow;
 
-
 template <typename A>
 concept Borrowable = requires(A a)
 {
@@ -443,8 +442,20 @@ static auto make_iterator(RawIter&& start_, RawIter&& end_, usize size)
 }
 
 template <typename T>
+struct Slice;
+
+//  template <typename T>
+//  struct is_slice : std::false_type{};
+//  template <typename T>
+//  struct is_slice<Slice<T>> : std::true_type{};
+//  template <typename T>
+//  using is_slice_v = is_slice<T>::value;
+
+template <typename T>
 struct Slice
 {
+  using type = T;
+
   static Slice<T> from_raw_parts(T* data, usize len)
   {
     Slice<T> res;
@@ -561,15 +572,9 @@ struct Slice
     return true;
   }
 
-  template <typename T2>
-  bool starts_with(const Slice<T2>& needle) const requires std::equality_comparable_with<T, T2>
-  {
-    const auto n = needle.len();
-    return len() >= n && needle == (*this)({}, n);
-  }
-
   template <Borrowable BorrowableType>
-  bool starts_with(const BorrowableType& original) const
+  bool starts_with(const BorrowableType& original)
+      const requires std::equality_comparable_with<T, typename Borrow<BorrowableType>::type>
   {
     const auto needle = Borrow<BorrowableType>::borrow(original);
     const auto n = needle.len();
@@ -673,8 +678,6 @@ auto drain(C&& container)
   return detail::make_iterator<typename C::value_type>(std::move(f), size);
 }
 
-
-
 template <>
 struct Borrow<const char*>
 {
@@ -699,6 +702,16 @@ struct Borrow<T>
   static detail::Slice<const typename T::value_type> borrow(const T& s)
   {
     return detail::Slice<const typename T::value_type>::from_raw_parts(s.data(), s.size());
+  }
+};
+
+template <typename T>
+struct Borrow<rust::Slice<T>>
+{
+  using type = T;
+  static rust::Slice<T> borrow(const rust::Slice<T>& s)
+  {
+    return s;
   }
 };
 
