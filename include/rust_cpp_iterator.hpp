@@ -43,17 +43,21 @@ namespace rust
 {
 
 template <typename T>
-struct Ref{
-  Ref(const T* v) : v_(v) {};
-  const T& operator*() const {
+struct Ref
+{
+  Ref(const T* v) : v_(v){};
+  const T& operator*() const
+  {
     return *v_;
   }
   const T* v_;
 };
 template <typename T>
-struct RefMut{
-  RefMut(T* v) : v_(v) {};
-  T& operator*() const {
+struct RefMut
+{
+  RefMut(T* v) : v_(v){};
+  T& operator*() const
+  {
     return *v_;
   }
   T* v_;
@@ -203,24 +207,28 @@ struct Option
     return false;
   }
 
-  auto operator<=>(const Option<T>& other) const {
-    if (populated_ && other.populated_) {
+  auto operator<=>(const Option<T>& other) const
+  {
+    if (populated_ && other.populated_)
+    {
       return v_ <=> other.v_;
-    } else {
+    }
+    else
+    {
       return populated_ <=> other.populated_;
     }
   };
-  
 
   template <typename... Args>
   Option(Args... v) : v_(v...), populated_{ true } {};
 
-  Option(const T& v) : v_( v ), populated_{ true } {};
+  Option(const T& v) : v_(v), populated_{ true } {};
   //  Option(T&& v) : v_{ v }, populated_{ true } {};
   Option() : populated_{ false } {};
-  Option(const Option<T>& v) : populated_{ v.populated_}, v_{v.v_} {};
+  Option(const Option<T>& v) : populated_{ v.populated_ }, v_{ v.v_ } {};
 
-  Option<T>& operator=(Option<T>&& v) {
+  Option<T>& operator=(Option<T>&& v)
+  {
     populated_ = v.populated_;
     v_ = std::move(v.v_);
     v.populated_ = false;
@@ -230,8 +238,9 @@ struct Option
   bool populated_{ false };
 
   // Hairy storage for the optional without allocation.
-  union {
-    char not_used_{0};
+  union
+  {
+    char not_used_{ 0 };
     T v_;
   };
 };
