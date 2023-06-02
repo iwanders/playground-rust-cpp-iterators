@@ -397,21 +397,49 @@ int main(int argc, char* argv[])
     std::vector<char> a{ 'H', 'e', 'l', 'l', 'o' };
     auto slice_hello = rs::slice(a);
     std::cout << "slice_hello: " << slice_hello << std::endl;
-    const auto str = "Hell";
-    auto slice_hell = rs::slice(str);
-    std::cout << "slice_hell: " << slice_hell << std::endl;
-    ASSERT_EQ(slice_hello.starts_with(slice_hell), true);
+
+    // starts_with with std::vector
+    {
+      std::vector<char> vec_hel = { 'H', 'e', 'l' };
+      ASSERT_EQ(slice_hello.starts_with(rs::slice(vec_hel)), true);
+      ASSERT_EQ(slice_hello.starts_with(vec_hel), true);
+    }
+    // starts_with with std::array
     {
       std::array<char, 3> arr_hel = { 'H', 'e', 'l' };
       ASSERT_EQ(slice_hello.starts_with(rs::slice(arr_hel)), true);
-    }
-    {
-      std::string str_hel = "Hel";
-      ASSERT_EQ(slice_hello({}, 3).starts_with(rs::slice(str_hel)), true);
-      ASSERT_EQ(slice_hello({}, 3).starts_with(str_hel), true);
+      ASSERT_EQ(slice_hello.starts_with(arr_hel), true);
     }
 
-    //  ASSERT_EQ(slice_hello.starts_with(rs::slice("He")), true);
+    // starts_with with std::string
+    {
+      std::string str_hel = "Hel";
+      ASSERT_EQ(slice_hello.starts_with(rs::slice(str_hel)), true);
+      ASSERT_EQ(slice_hello.starts_with(str_hel), true);
+    }
+
+    // starts_with with with c string.
+    {
+      const char* hel = "Hel";
+      ASSERT_EQ(slice_hello.starts_with(rs::slice(hel)), true);
+      ASSERT_EQ(slice_hello.starts_with(hel), true);
+    }
+
+    // starts_with c array :|
+    {
+      auto z = rs::slice("Hel");  // not actually const char*, instead char[4].
+      std::cout << "z has null byte: " << z << std::endl;
+
+      // Explicit C array initialisation
+      const char foo[3] = { 'H', 'e', 'l' };
+      auto zf = rs::slice(foo);
+      std::cout << "zf has no null byte of course: " << zf << std::endl;
+
+      // So this fails, since it compaires "Hel\0"
+      //  ASSERT_EQ(slice_hello.starts_with("Hel"), true);
+      // Or this fails, since it compares "He"
+      //  ASSERT_EQ(slice_hello.starts_with(foo), true);
+    }
   }
 
   return 0;

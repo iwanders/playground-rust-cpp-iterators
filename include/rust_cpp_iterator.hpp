@@ -715,6 +715,16 @@ struct Borrow<rust::Slice<T>>
   }
 };
 
+template <typename T, std::size_t N>
+struct Borrow<T[N]>
+{
+  using type = const T;
+  static rust::Slice<const T> borrow(const T* s)
+  {
+    return detail::Slice<const T>::from_raw_parts(s, N);
+  }
+};
+
 }  // namespace rust
 
 // mixing for structured bindings on options.
