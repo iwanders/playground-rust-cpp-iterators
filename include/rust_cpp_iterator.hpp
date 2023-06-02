@@ -42,6 +42,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rust
 {
 
+template <typename T>
+struct Ref{
+  Ref(const T* v) : v_(v) {};
+  const T& operator*() const {
+    return *v_;
+  }
+  const T* v_;
+};
+template <typename T>
+struct RefMut{
+  RefMut(T* v) : v_(v) {};
+  T& operator*() const {
+    return *v_;
+  }
+  T* v_;
+};
+
 using usize = std::size_t;
 
 template <typename A>
@@ -94,8 +111,8 @@ concept DataSize = requires(A a)
 
 struct panic_error : std::runtime_error
 {
-  panic_error(const char* s) : std::runtime_error(s){};
-  panic_error(const std::string& s) : std::runtime_error(s){};
+  inline panic_error(const char* s) : std::runtime_error(s){};
+  inline panic_error(const std::string& s) : std::runtime_error(s){};
 };
 
 template <typename A>
@@ -150,7 +167,8 @@ struct Option
   {
     if (populated_)
     {
-      return std::exchange(v_, T{});  // bah, now Option requires default constructibility.
+      populated_ = false;
+      return std::move(v_);
     }
     throw panic_error("unwrap called on empty Option");
   }
@@ -178,6 +196,7 @@ struct Option
   {
     if (populated_)
     {
+      populated_ = false;
       x = std::move(v_);
       return true;
     }
@@ -192,9 +211,22 @@ struct Option
   Option(const T& v) : v_{ v }, populated_{ true } {};
   //  Option(T&& v) : v_{ v }, populated_{ true } {};
   Option() : populated_{ false } {};
+  Option(const Option<T>& v) : populated_{ v.populated_}, v_{v.v_} {};
+
+  Option<T> operator=(Option<T>&& v) {
+    Option<T> res;
+    res.populated_ = v.populated_;
+    res.v_ = std::move(v.v_);
+    return res;
+  }
 
   bool populated_{ false };
-  T v_;
+
+  // Hairy storage for the optional without allocation.
+  union {
+    char not_used_{0};
+    T v_;
+  };
 };
 
 template <std::size_t Index, typename T>
@@ -382,6 +414,7 @@ struct Iterator
       auto i_next = next();
       while (i_next.is_some())
       {
+        std::cout << "Next: " << i_next << std::endl;
         current = current + std::move(i_next).unwrap();  // should call the sum trait really.
         i_next = next();
       }
