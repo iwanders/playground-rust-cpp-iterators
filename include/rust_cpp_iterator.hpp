@@ -203,21 +203,28 @@ struct Option
     return false;
   }
 
-  auto operator<=>(const Option<T>&) const = default;
+  auto operator<=>(const Option<T>& other) const {
+    if (populated_ && other.populated_) {
+      return v_ <=> other.v_;
+    } else {
+      return populated_ <=> other.populated_;
+    }
+  };
+  
 
   template <typename... Args>
   Option(Args... v) : v_(v...), populated_{ true } {};
 
-  Option(const T& v) : v_{ v }, populated_{ true } {};
+  Option(const T& v) : v_( v ), populated_{ true } {};
   //  Option(T&& v) : v_{ v }, populated_{ true } {};
   Option() : populated_{ false } {};
   Option(const Option<T>& v) : populated_{ v.populated_}, v_{v.v_} {};
 
-  Option<T> operator=(Option<T>&& v) {
-    Option<T> res;
-    res.populated_ = v.populated_;
-    res.v_ = std::move(v.v_);
-    return res;
+  Option<T>& operator=(Option<T>&& v) {
+    populated_ = v.populated_;
+    v_ = std::move(v.v_);
+    v.populated_ = false;
+    return *this;
   }
 
   bool populated_{ false };
