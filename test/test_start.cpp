@@ -408,6 +408,8 @@ int main(int argc, char* argv[])
     {
       std::string str_hel = "Hel";
       ASSERT_EQ(slice_hello({}, 3).starts_with(rs::slice(str_hel)), true);
+      //  auto z = slice_hello.starts_with(str_hel);
+      ASSERT_EQ(slice_hello({}, 3).starts_with(str_hel), true);
     }
 
     //  ASSERT_EQ(slice_hello.starts_with(rs::slice("He")), true);

@@ -98,6 +98,16 @@ struct panic_error : std::runtime_error
   panic_error(const std::string& s) : std::runtime_error(s){};
 };
 
+template <typename A>
+struct Borrow;
+
+
+template <typename A>
+concept Borrowable = requires(A a)
+{
+  Borrow<A>::borrow(a);
+};
+
 namespace detail
 {
 
@@ -558,6 +568,14 @@ struct Slice
     return len() >= n && needle == (*this)({}, n);
   }
 
+  template <Borrowable BorrowableType>
+  bool starts_with(const BorrowableType& original) const
+  {
+    const auto needle = Borrow<BorrowableType>::borrow(original);
+    const auto n = needle.len();
+    return len() >= n && needle == (*this)({}, n);
+  }
+
 private:
   T* start_;
   std::size_t len_;
@@ -584,41 +602,6 @@ SS& operator<<(SS& os, const Slice<T>& slice)
 }
 
 }  // namespace detail
-
-template <typename A>
-struct Borrow;
-
-template <>
-struct Borrow<const char*>
-{
-  static detail::Slice<const char> borrow(const char* s)
-  {
-    for (usize i = 0; i < std::numeric_limits<usize>::max(); i++)
-    {
-      if (s[i] == 0)
-      {
-        return detail::Slice<const char>::from_raw_parts(s, i);
-      }
-    }
-    throw panic_error("could not find end of string for borrow");
-  }
-};
-
-template <rust::DataSize T>
-struct Borrow<T>
-{
-  static detail::Slice<const typename T::value_type> borrow(const T& s)
-  {
-    return detail::Slice<const typename T::value_type>::from_raw_parts(s.data(), s.size());
-    ;
-  }
-};
-
-template <typename A>
-concept Borrowable = requires(A a)
-{
-  Borrow<A>::borrow(a);
-};
 
 template <typename T>
 using Option = detail::Option<T>;
@@ -689,6 +672,35 @@ auto drain(C&& container)
   };
   return detail::make_iterator<typename C::value_type>(std::move(f), size);
 }
+
+
+
+template <>
+struct Borrow<const char*>
+{
+  using type = const char;
+  static detail::Slice<const char> borrow(const char* s)
+  {
+    for (usize i = 0; i < std::numeric_limits<usize>::max(); i++)
+    {
+      if (s[i] == 0)
+      {
+        return detail::Slice<const char>::from_raw_parts(s, i);
+      }
+    }
+    throw panic_error("could not find end of string for borrow");
+  }
+};
+
+template <rust::DataSize T>
+struct Borrow<T>
+{
+  using type = const typename T::value_type;
+  static detail::Slice<const typename T::value_type> borrow(const T& s)
+  {
+    return detail::Slice<const typename T::value_type>::from_raw_parts(s.data(), s.size());
+  }
+};
 
 }  // namespace rust
 
