@@ -426,6 +426,12 @@ int main(int argc, char* argv[])
     }
 
     // starts_with c array :|
+    // This is problematic, because we can't see the difference between a c array of chars and a 
+    // string literal, they are both a fixed length char array. With a string literal it also
+    // contains the nullbyte at the end, so doing a .starts_with("abc") has a 4 long char array of
+    // {'a', 'b', 'c', 0}.
+    // Since C arrays are more rare than string literals, we chose to remove the nullbyte at the end
+    // of a string literal.
     {
       auto z = rs::slice("Hel");  // not actually const char*, instead char[4].
       std::cout << "z has null byte: " << z << std::endl;
@@ -436,7 +442,7 @@ int main(int argc, char* argv[])
       std::cout << "zf has no null byte of course: " << zf << std::endl;
 
       // So this fails, since it compaires "Hel\0"
-      //  ASSERT_EQ(slice_hello.starts_with("Hel"), true);
+      ASSERT_EQ(slice_hello.starts_with("Hel"), true);
       // Or this fails, since it compares "He"
       //  ASSERT_EQ(slice_hello.starts_with(foo), true);
     }

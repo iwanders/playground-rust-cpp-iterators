@@ -768,7 +768,13 @@ template <typename T, std::size_t N>
 struct Borrow<T[N]>
 {
   using type = const T;
-  static rust::Slice<const T> borrow(const T* s)
+
+  // For char[N], we pop the null byte at the end.
+  static rust::Slice<const char> borrow(const char* s) requires std::is_same<T, char>::value
+  {
+    return detail::Slice<const T>::from_raw_parts(s, N - 1);
+  }
+  static rust::Slice<const T> borrow(const T* s) requires (!std::is_same<T, char>::value)
   {
     return detail::Slice<const T>::from_raw_parts(s, N);
   }
