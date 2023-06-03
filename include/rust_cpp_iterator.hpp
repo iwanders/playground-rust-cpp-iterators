@@ -54,7 +54,6 @@ struct Ref
   using type = T;
   Ref(const T* v) : v_(v){};
 
-  Ref(){};
   const T& operator*() const
   {
     if (v_ == nullptr)
@@ -84,8 +83,6 @@ struct RefMut
 {
   using type = T;
   RefMut(T* v) : v_(v){};
-
-  RefMut(){};
   T& operator*()
   {
     if (v_ == nullptr)
