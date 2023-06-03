@@ -255,9 +255,32 @@ int main(int argc, char* argv[])
     auto it_a = rust::iter(a);
     std::vector<int> b{ 10, 20, 30, 40 };
     auto it_b = rust::iter(b);
-    auto v = std::move(it_a).zip(it_b).map([](const auto& v) { return *v[0_i] + *v[1_i]; }).collect<std::vector<int>>();
+    auto v = std::move(it_a)
+                 .zip(it_b)
+                 .map(
+                     [](const auto& v)
+                     {
+                       const auto& [l, r] = v;
+                       return *l + *r;
+                     })
+                 .collect<std::vector<int>>();
     std::vector<int> expected{ 11, 22, 33, 44 };
     ASSERT_EQ(rust::slice(v), rust::slice(expected));
+  }
+
+  {
+    using namespace rust::literals;
+    std::vector<int> a{ 1, 2, 3, 4 };
+    std::vector<int> b{ 10, 20, 30, 40 };
+    //  auto v = rust::slice(std::vector<int>{});
+    //  std::cout << "sliceable vector int: " << rust::Borrowable<std::vector<int>> << std::endl;
+    //  std::cout << "sliceable vector int: " << rust::<std::vector<int>> << std::endl;
+    //  auto i = rust::into_iter(b);
+    //  auto v = rust::iter(a).zip(b);
+    auto v = rust::iter(a).zip(b).map([](const auto& v) { return *v[0_i] + *v[1_i]; }).collect<std::vector<int>>();
+    std::vector<int> expected{ 11, 22, 33, 44 };
+    ASSERT_EQ(rust::slice(v), rust::slice(expected));
+    //  std::abort();
   }
 
   {

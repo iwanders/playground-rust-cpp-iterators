@@ -60,14 +60,6 @@ using f32 = float;
 using f64 = double;
 }  // namespace types
 
-namespace detail
-{
-
-template <typename T>
-struct Slice;
-
-}
-
 struct panic_error : std::runtime_error
 {
   inline panic_error(const char* s) : std::runtime_error(s){};
@@ -209,12 +201,6 @@ concept Borrowable = requires(A a)
 };
 
 template <typename A>
-concept Sliceable = requires(A a)
-{
-  slice(a);
-};
-
-template <typename A>
 concept HasNext = requires(A a)
 {
   a.next();
@@ -222,15 +208,6 @@ concept HasNext = requires(A a)
 
 template <class A>
 struct IntoIterator;
-
-template <Sliceable A>
-struct IntoIterator<A>
-{
-  static auto into_iter(A c)
-  {
-    return slice(c).iter();
-  }
-};
 
 template <HasNext A>
 struct IntoIterator<A>
@@ -250,7 +227,7 @@ concept Iterable = requires(A a)
 template <typename T>
 auto into_iter(T a)
 {
-  return IntoIterator<T>::into_iter(a);
+  return IntoIterator<std::remove_reference_t<T>>::into_iter(a);
 }
 
 namespace detail
@@ -973,6 +950,15 @@ auto slice(C&& container) requires Borrowable<C>
 {
   return Borrow<C>::borrow(container);
 }
+
+template <DataSize A>
+struct IntoIterator<A>
+{
+  static auto into_iter(const A& c)
+  {
+    return slice(c).iter();
+  }
+};
 
 template <typename C>
 auto iter(const C& container)
