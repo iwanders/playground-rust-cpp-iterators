@@ -670,7 +670,7 @@ auto slice(C& container) requires rust::DataSize<C>
 }
 
 template <typename C>
-auto slice(const C& container) requires Borrowable<C>
+auto slice(C&& container) requires Borrowable<C>
 {
   return Borrow<C>::borrow(container);
 }
@@ -727,8 +727,13 @@ auto drain(C&& container)
   return detail::make_iterator<typename C::value_type>(std::move(f), size);
 }
 
-template <>
-struct Borrow<const char*>
+
+
+template<class T>
+concept ConstCharString = std::is_same_v<std::remove_cvref_t<T>, const char*>;
+
+template <ConstCharString T>
+struct Borrow<T>
 {
   using type = const char;
   static detail::Slice<const char> borrow(const char* s)
@@ -747,10 +752,10 @@ struct Borrow<const char*>
 template <rust::DataSize T>
 struct Borrow<T>
 {
-  using type = const typename T::value_type;
-  static detail::Slice<const typename T::value_type> borrow(const T& s)
+  using type = const typename std::remove_cvref_t<T>::value_type;
+  static detail::Slice<type> borrow(const T& s)
   {
-    return detail::Slice<const typename T::value_type>::from_raw_parts(s.data(), s.size());
+    return detail::Slice<type>::from_raw_parts(s.data(), s.size());
   }
 };
 
@@ -764,19 +769,23 @@ struct Borrow<rust::Slice<T>>
   }
 };
 
-template <typename T, std::size_t N>
-struct Borrow<T[N]>
+template<typename T>
+concept IsArray = std::is_array_v<std::remove_cvref_t<T>>;
+
+template <IsArray T>
+struct Borrow<T>
 {
-  using type = const T;
+  using type = const std::remove_extent_t<std::remove_cvref_t<T>>;
+  static constexpr std::size_t N = std::extent_v<std::remove_cvref_t<T>>;
 
   // For char[N], we pop the null byte at the end.
-  static rust::Slice<const char> borrow(const char* s) requires std::is_same<T, char>::value
+  static rust::Slice<type> borrow(const type (s)[N]) requires std::is_same<type, const char>::value
   {
-    return detail::Slice<const T>::from_raw_parts(s, N - 1);
+    return detail::Slice<type>::from_raw_parts(s, N - 1);
   }
-  static rust::Slice<const T> borrow(const T* s) requires (!std::is_same<T, char>::value)
+  static rust::Slice<type> borrow(const type (s)[N]) requires (!std::is_same<type, const char>::value)
   {
-    return detail::Slice<const T>::from_raw_parts(s, N);
+    return detail::Slice<type>::from_raw_parts(s, N);
   }
 };
 
