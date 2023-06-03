@@ -65,8 +65,53 @@ std::string type_string()
     }                                                                                                                  \
   } while (0)
 
+struct Foo{
+
+  /* // Right associative, so needs parenthesis
+  template <typename T>
+  auto& operator,(T v) {
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+    std::cout << T::value << std::endl;
+    if constexpr (T::value == 0) {
+      return b_;
+    } else {
+      return a_;
+    }
+  }
+  */
+  template <typename T>
+  auto& operator[](T z) {
+    std::cout << T::value << std::endl;
+    if constexpr (T::value == 0) {
+      return b_;
+    } else {
+      return a_;
+    }
+  }
+  unsigned int a_{0xDEADBEEFu};
+  float b_{133.7};
+};
+
+template <char z, char... rest>
+struct ascii_to_integer{
+  // chr(0x30) == '0'
+  using type = std::integral_constant<std::size_t, z - 0x30>;
+  static constexpr auto value = std::integral_constant<std::size_t, z - 0x30>{};
+};
+template <char ...str>
+constexpr auto operator"" _i() {
+  return ascii_to_integer<str...>::value;
+}
+
+
 int main(int argc, char* argv[])
 {
+  Foo z;
+  std::cout << z[0_i] << std::endl;
+  std::cout << z[1_i] << std::endl;
+  return 1;
+
   namespace rs = rust;
 
   {
