@@ -271,7 +271,6 @@ struct Callable {
 rust::detail::static_for_call<3, Callable>(5);
 */
 
-
 // Rolling our own Tuple to make it nice and printable etc.
 // using https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2726r0.html
 
@@ -768,27 +767,61 @@ static auto make_iterator(RawIter&& start_, RawIter&& end_, usize size)
       size);
 }
 
+template <typename Child, typename Z>
+struct SliceInterface;
+
 template <typename T>
-struct Slice
+struct Slice : SliceInterface<Slice<T>, T>
 {
   using type = T;
 
   static Slice<T> from_raw_parts(T* data, usize len)
   {
     Slice<T> res;
-    res.start_ = data;
+    res.begin_ = data;
     res.len_ = len;
     return res;
   }
 
+  T* begin() const
+  {
+    return begin_;
+  }
+  usize len() const
+  {
+    return len_;
+  }
+
+private:
+  T* begin_;
+  std::size_t len_;
+};
+
+template <typename Child, typename T>
+struct SliceInterface
+{
+  SliceInterface() : child_(*static_cast<Child*>(this))
+  {
+  }
+
+  T* begin() const
+  {
+    return child_.begin();
+  }
+
+  usize len() const
+  {
+    return child_.len();
+  }
+
   T& operator[](usize index)
   {
-    return start_[index];
+    return begin()[index];
   }
 
   const T& operator[](usize index) const
   {
-    return start_[index];
+    return begin()[index];
   }
 
   /// Take a subslice
@@ -812,23 +845,16 @@ struct Slice
     }
     if (end > len())
     {
-      throw panic_error("range end index " + to_string(end) + " out of range for slice of length " + to_string(len_));
+      throw panic_error("range end index " + to_string(end) + " out of range for slice of length " + to_string(len()));
     }
-    Slice<T> res;
-    res.start_ = start_ + start;
-    res.len_ = end - start;
-    return res;
-  }
 
-  std::size_t len() const
-  {
-    return len_;
+    return Slice<T>::from_raw_parts(begin() + start, end - start);
   }
 
   auto iter() const
   {
-    auto start = start_;
-    auto end = start_ + len_;
+    auto start = begin();
+    auto end = begin() + len();
 
     using Wrapper = RefWrapper<const T>;
     return detail::make_iterator<Wrapper>(
@@ -845,13 +871,13 @@ struct Slice
             return detail::Option<Wrapper>();
           }
         },
-        len_);
+        len());
   }
 
   auto iter_mut() const
   {
-    auto start = start_;
-    auto end = start_ + len_;
+    auto start = begin();
+    auto end = begin() + len();
     using Wrapper = RefWrapper<T>;
     return detail::make_iterator<Wrapper>(
         [start, end]() mutable
@@ -867,12 +893,12 @@ struct Slice
             return detail::Option<Wrapper>();
           }
         },
-        len_);
+        len());
   }
 
   void sort() requires std::totally_ordered<T>
   {
-    std::ranges::stable_sort(start_, start_ + len_);
+    std::ranges::stable_sort(begin(), begin() + len());
   }
 
   template <typename T2>
@@ -903,12 +929,11 @@ struct Slice
 
   const T* as_ptr() const
   {
-    return start_;
+    return begin();
   }
 
 private:
-  T* start_;
-  std::size_t len_;
+  Child& child_;
 };
 
 template <typename T>
