@@ -65,8 +65,8 @@ std::string type_string()
     }                                                                                                                  \
   } while (0)
 
-struct Foo{
-
+struct Foo
+{
   /* // Right associative, so needs parenthesis
   template <typename T>
   auto& operator,(T v) {
@@ -81,36 +81,41 @@ struct Foo{
   }
   */
   template <typename T>
-  auto& operator[](T z) {
+  auto& operator[](T z)
+  {
     std::cout << T::value << std::endl;
-    if constexpr (T::value == 0) {
+    if constexpr (T::value == 0)
+    {
       return b_;
-    } else {
+    }
+    else
+    {
       return a_;
     }
   }
-  unsigned int a_{0xDEADBEEFu};
-  float b_{133.7};
+  unsigned int a_{ 0xDEADBEEFu };
+  float b_{ 133.7 };
 };
 
 template <char z, char... rest>
-struct ascii_to_integer{
+struct ascii_to_integer
+{
   // chr(0x30) == '0'
   using type = std::integral_constant<std::size_t, z - 0x30>;
   static constexpr auto value = std::integral_constant<std::size_t, z - 0x30>{};
 };
-template <char ...str>
-constexpr auto operator"" _i() {
+template <char... str>
+constexpr auto operator"" _i()
+{
   return ascii_to_integer<str...>::value;
 }
 
-
 int main(int argc, char* argv[])
 {
-  Foo z;
-  std::cout << z[0_i] << std::endl;
-  std::cout << z[1_i] << std::endl;
-  return 1;
+  //  Foo z;
+  //  std::cout << z[0_i] << std::endl;
+  //  std::cout << z[1_i] << std::endl;
+  //  return 1;
 
   namespace rs = rust;
 
@@ -485,6 +490,19 @@ int main(int argc, char* argv[])
   std::cout << type_string<rs::RefWrapper<const int>>() << std::endl;
   std::cout << type_string<rs::RefWrapper<const int*>>() << std::endl;
   std::cout << type_string<rs::RefWrapper<const int* const>>() << std::endl;
+
+  // Test our tuple, which is nice.
+  {
+    const auto t = rs::Tuple(3.3, 5.5);
+    //  using std::get;
+    //  get<0>(t);
+    //  std::get<0>(t);
+    //  std::get<1>(t);
+    std::cout << t << std::endl;
+    //  rust::detail::static_for<3>([](const long unsigned int z) { std::cout << z << std::endl; });
+    //  rust::detail::static_for_call<3, Callable>(5);
+      
+  }
 
   return 0;
 }

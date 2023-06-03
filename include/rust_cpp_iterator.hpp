@@ -42,6 +42,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rust
 {
 
+inline namespace types
+{
+using usize = std::size_t;
+
+using u8 = std::uint8_t;
+using u16 = std::uint16_t;
+using u32 = std::uint32_t;
+using u64 = std::uint64_t;
+
+using i8 = std::int8_t;
+using i16 = std::int16_t;
+using i32 = std::int32_t;
+using i64 = std::int64_t;
+}  // namespace types
+
 struct panic_error : std::runtime_error
 {
   inline panic_error(const char* s) : std::runtime_error(s){};
@@ -125,8 +140,6 @@ template <typename T>
 using RefWrapper = std::conditional_t<std::is_const_v<std::remove_reference_t<T>>, Ref<const std::remove_cvref_t<T>>,
                                       RefMut<std::remove_cvref_t<T>>>;
 
-using usize = std::size_t;
-
 template <typename A>
 struct FromIterator;
 
@@ -186,6 +199,113 @@ concept Borrowable = requires(A a)
 
 namespace detail
 {
+
+template <typename F, std::size_t... I>
+auto static_for_impl(F&& a, std::index_sequence<I...>)
+{
+  (a(I), ...);
+}
+template <std::size_t N, typename F, typename Indices = std::make_index_sequence<N>>
+auto static_for(F&& a)
+{
+  return static_for_impl(a, Indices{});
+}
+// rust::detail::static_for<3>([](const long unsigned int z) { std::cout << z << std::endl; });
+
+
+
+template <typename T, std::size_t... I, typename... Args>
+auto static_for_call_impl(std::index_sequence<I...>, Args&&... args)
+{
+  (T::template call<I>(args...), ...);
+}
+template <std::size_t N, typename T, typename Indices = std::make_index_sequence<N>, typename... Args>
+auto static_for_call(Args&&... args)
+{
+  return static_for_call_impl<T>(Indices{}, args...);
+}
+/*
+struct Callable {
+  template <std::size_t N>
+  static auto call(int z) {
+    std::cout << N  << " z: " << z << std::endl;
+  }
+};
+rust::detail::static_for_call<3, Callable>(5);
+*/
+
+
+
+template <char z, char... rest>
+struct ascii_to_integer
+{
+  // chr(0x30) == '0'
+  using type = std::integral_constant<std::size_t, z - 0x30>;
+  static constexpr auto value = std::integral_constant<std::size_t, z - 0x30>{};
+};
+template <char... str>
+constexpr auto operator"" _i()
+{
+  return ascii_to_integer<str...>::value;
+}
+
+template <typename... Types>
+struct Tuple
+{
+  static constexpr usize length = sizeof...(Types);
+
+  Tuple(Types&&... v) : v_(v...)
+  {
+  }
+
+  template <typename T>
+  auto& operator[](T z)
+  {
+    return std::get<T::type::value>(v_);
+  }
+
+  template <usize N>
+  auto& get()
+  {
+    return std::get<N>(v_);
+  }
+  template <usize N>
+  const auto& get() const
+  {
+    return std::get<N>(v_);
+  }
+
+private:
+  std::tuple<Types...> v_;
+};
+
+struct TuplePrinter {
+  template <std::size_t N, typename T>
+  static auto call(std::string& s, std::size_t length, T&& t) {
+    using std::to_string;
+    s += to_string(t.template get<N>());
+    if (N != (length - 1)) {
+      s += ", ";
+    }
+  }
+};
+
+template <typename... T>
+std::string to_string(const Tuple<T...>& t)
+{
+  using TupleType = Tuple<T...>;
+  using std::to_string;
+  std::string s = "(";
+  static_for_call<TupleType::length, TuplePrinter>(s, TupleType::length, t);
+  s += ")";
+  return s;
+}
+template <typename SS, typename... T>
+SS& operator<<(SS& os, const Tuple<T...>& t)
+{
+  os << to_string(t);
+  return os;
+}
 
 using std::to_string;
 
@@ -725,6 +845,9 @@ SS& operator<<(SS& os, const Slice<T>& slice)
 
 }  // namespace detail
 
+template <typename... T>
+using Tuple = detail::Tuple<T...>;
+
 template <typename T>
 using Option = detail::Option<T>;
 
@@ -858,4 +981,34 @@ struct Borrow<T>
   }
 };
 
+namespace prelude
+{
+using detail::operator""_i;
+}
+
 }  // namespace rust
+
+namespace std
+{
+template <typename... T>
+struct tuple_size<rust::Tuple<T...>> : std::integral_constant<std::size_t, sizeof...(T)>
+{
+};
+
+template <std::size_t N, typename... T>
+struct tuple_element<N, rust::Tuple<T...>>
+{
+  using type = decltype(std::declval<rust::Tuple<T...>>().template get<N>());
+};
+
+template <std::size_t N, typename... T>
+auto& get(rust::Tuple<T...>& t)
+{
+  return t.template get<N>();
+}
+template <std::size_t N, typename... T>
+auto const& get(const rust::Tuple<T...>& t)
+{
+  return t.template get<N>();
+}
+}  // namespace std
