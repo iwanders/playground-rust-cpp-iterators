@@ -86,20 +86,46 @@ concepts instead of SFINAE
     std::cout << "s: " << slice << std::endl;
 ```
 
+Example of using a slice method, like `starts_with`.
 ```cpp
+
     std::vector<char> a{ 'H', 'e', 'l', 'l', 'o' };
     auto slice_hello = rs::slice(a);
-    std::cout << "slice_hello: " << slice_hello << std::endl;
-    const auto str = "Hell";
-    auto slice_hell = rs::slice(str);
-    std::cout << "slice_hell: " << slice_hell << std::endl;
-    ASSERT_EQ(slice_hello.starts_with(slice_hell), true);
+
     {
-      std::array<char, 3> arr_hel = { 'H', 'e', 'l' };
-      ASSERT_EQ(slice_hello.starts_with(rs::slice(arr_hel)), true);
+      std::vector<char> vec_hel{ 'H', 'e', 'l' };
+      ASSERT_EQ(slice_hello.starts_with(rs::slice(vec_hel)), true);
+      ASSERT_EQ(slice_hello.starts_with(vec_hel), true);
     }
+    // starts_with with std::array
     {
-      std::string str_hel = "Hel";
-      ASSERT_EQ(slice_hello({}, 3).starts_with(rs::slice(str_hel)), true);
+      std::array<char, 3> arr_hel{ 'H', 'e', 'l' };
+      ASSERT_EQ(slice_hello.starts_with(rs::slice(arr_hel)), true);
+      ASSERT_EQ(slice_hello.starts_with(arr_hel), true);
+    }
+
+    // starts_with with std::string
+    {
+      std::string str_hel{"Hel"};
+      ASSERT_EQ(slice_hello.starts_with(rs::slice(str_hel)), true);
+      ASSERT_EQ(slice_hello.starts_with(str_hel), true);
+    }
+
+    // starts_with with with c string.
+    {
+      const char* hel = "Hel";
+      ASSERT_EQ(slice_hello.starts_with(rs::slice(hel)), true);
+      ASSERT_EQ(slice_hello.starts_with(hel), true);
+    }
+
+    // starts_with c array :|
+    {
+      auto z = rs::slice("Hel");  // not actually const char*, instead char[4].
+      // We strip the nullbyte for char arrays of known lengths, that way this works:
+      ASSERT_EQ(slice_hello.starts_with("Hel"), true);
+      // but obviously, for this we pay the price:
+      const char foo[3] = { 'H', 'e', 'l' };
+      ASSERT_EQ(rs::slice(foo).len(), 2);
+      // There is no way to distinguish between a string literal and a const char[N].
     }
 ```

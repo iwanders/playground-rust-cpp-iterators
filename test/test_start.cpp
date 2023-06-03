@@ -400,20 +400,20 @@ int main(int argc, char* argv[])
 
     // starts_with with std::vector
     {
-      std::vector<char> vec_hel = { 'H', 'e', 'l' };
+      std::vector<char> vec_hel{ 'H', 'e', 'l' };
       ASSERT_EQ(slice_hello.starts_with(rs::slice(vec_hel)), true);
       ASSERT_EQ(slice_hello.starts_with(vec_hel), true);
     }
     // starts_with with std::array
     {
-      std::array<char, 3> arr_hel = { 'H', 'e', 'l' };
+      std::array<char, 3> arr_hel{ 'H', 'e', 'l' };
       ASSERT_EQ(slice_hello.starts_with(rs::slice(arr_hel)), true);
       ASSERT_EQ(slice_hello.starts_with(arr_hel), true);
     }
 
     // starts_with with std::string
     {
-      std::string str_hel = "Hel";
+      std::string str_hel{ "Hel" };
       ASSERT_EQ(slice_hello.starts_with(rs::slice(str_hel)), true);
       ASSERT_EQ(slice_hello.starts_with(str_hel), true);
     }
@@ -438,8 +438,7 @@ int main(int argc, char* argv[])
 
       // Explicit C array initialisation
       const char foo[3] = { 'H', 'e', 'l' };
-      auto zf = rs::slice(foo);
-      std::cout << "zf has no null byte of course: " << zf << std::endl;
+      ASSERT_EQ(rs::slice(foo).len(), 2);
 
       // So this fails, since it compaires "Hel\0"
       ASSERT_EQ(slice_hello.starts_with("Hel"), true);
