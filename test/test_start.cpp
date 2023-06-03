@@ -131,6 +131,7 @@ int main(int argc, char* argv[])
     auto opt3 = opt2.map([](const auto& v) { return v + 0.5; });
     std::cout << opt3 << std::endl;
     std::cout << std::endl;
+    ASSERT_EQ(opt3, rs::Option(9.5));
   }
 
   {

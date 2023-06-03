@@ -260,6 +260,18 @@ struct Option
     }
   };
 
+  auto operator==(const Option<T>& other) const
+  {
+    if (populated_ && other.populated_)
+    {
+      return v_ == other.v_;
+    }
+    else
+    {
+      return populated_ == other.populated_;
+    }
+  };
+
   Option<Ref<T>> as_ref() const
   {
     if (is_some())
