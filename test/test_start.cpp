@@ -582,5 +582,20 @@ int main(int argc, char* argv[])
     auto s = iter(a).map([](const auto& v) { return (*v) * 2; }).collect<std::vector<f32>>();
   }
 
+  // Test our Vec, which implements the slice interface, not too sure if this is brilliant
+  // but hey... at least it works.
+  {
+    using namespace rust::prelude;
+    Vec<u8> a{ 0x61, 0x62, 0x63, 0x64 };
+    Vec<u16> b = a.iter().copied().collect();
+    ASSERT_EQ(a.starts_with("abc"), true);
+    ASSERT_EQ(a.last(), Option<rust::Ref<u8>>(&a[3]));
+    ASSERT_EQ(a.last().copied(), Option<u8>(0x64));
+    ASSERT_EQ(a.first(), Option<rust::Ref<u8>>(&a[0]));
+    ASSERT_EQ(a.first().copied(), Option<u8>(0x61));
+    std::cout << a << std::endl;
+    std::cout << a.first() << std::endl;
+  }
+
   return 0;
 }

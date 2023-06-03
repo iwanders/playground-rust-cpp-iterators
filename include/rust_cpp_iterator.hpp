@@ -81,6 +81,11 @@ struct Ref
     return *v_;
   }
 
+  bool operator==(const Ref<T>& other) const
+  {
+    return v_ == other.v_;
+  }
+
   const auto& deref() const
   {
     return *(*this);
@@ -115,6 +120,11 @@ struct RefMut
       throw panic_error("accessing dangling reference, just c++ things");
     }
     return *v_;
+  }
+
+  bool operator==(const RefMut<T>& other) const
+  {
+    return v_ == other.v_;
   }
 
   auto& deref()
@@ -232,6 +242,8 @@ auto into_iter(T& a)
 
 namespace detail
 {
+
+using std::to_string;
 
 template <typename T>
 std::string type_string()
@@ -360,8 +372,6 @@ SS& operator<<(SS& os, const Tuple<T...>& t)
   return os;
 }
 
-using std::to_string;
-
 template <typename T>
 struct Option
 {
@@ -379,6 +389,11 @@ struct Option
     {
       return Option<U>();
     }
+  }
+
+  auto copied() &&
+  {
+    return map([](const auto& v) { return *v; });
   }
 
   T unwrap() &&
@@ -783,11 +798,11 @@ struct Slice : SliceInterface<Slice<T>, T>
     return res;
   }
 
-  T* begin() const
+  T* _begin() const
   {
     return begin_;
   }
-  usize len() const
+  usize _len() const
   {
     return len_;
   }
@@ -804,14 +819,9 @@ struct SliceInterface
   {
   }
 
-  T* begin() const
-  {
-    return child_.begin();
-  }
-
   usize len() const
   {
-    return child_.len();
+    return child_._len();
   }
 
   T& operator[](usize index)
@@ -822,6 +832,34 @@ struct SliceInterface
   const T& operator[](usize index) const
   {
     return begin()[index];
+  }
+
+  const T& get_unchecked(usize index) const
+  {
+    return (*this)[index];
+  }
+
+  T& get_unchecked_mut(usize index)
+  {
+    return (*this)[index];
+  }
+
+  Option<Ref<T>> last() const
+  {
+    if (len() > 0)
+    {
+      return Option<Ref<T>>(Ref<T>(&get_unchecked(len() - 1)));
+    }
+    return Option<Ref<T>>();
+  }
+
+  Option<Ref<T>> first() const
+  {
+    if (len() > 0)
+    {
+      return Option<Ref<T>>(Ref<T>(&get_unchecked(0)));
+    }
+    return Option<Ref<T>>();
   }
 
   /// Take a subslice
@@ -932,6 +970,12 @@ struct SliceInterface
     return begin();
   }
 
+protected:
+  T* begin() const
+  {
+    return child_._begin();
+  }
+
 private:
   Child& child_;
 };
@@ -956,6 +1000,60 @@ SS& operator<<(SS& os, const Slice<T>& slice)
   return os;
 }
 
+template <typename T>
+struct Vec : SliceInterface<Vec<T>, T>
+{
+  Vec(std::initializer_list<T> v) : v_(v){};
+  Vec(const std::vector<T>& v) : v_(v){};
+  Vec(std::vector<T>&& v) : v_(v){};
+
+  const T* _begin() const
+  {
+    return v_.data();
+  }
+  T* _begin()
+  {
+    return v_.data();
+  }
+  usize _len() const
+  {
+    return v_.size();
+  }
+
+  // We could implement the full vector interface here, but mehh.
+  operator std::vector<T>()
+  {
+    return v_;
+  }
+
+private:
+  std::vector<T> v_;
+};
+
+template <typename T>
+std::string to_string(const Vec<T>& v)
+{
+  std::string s = "[";
+  for (const auto& [index, value] : v.iter().enumerate())
+  {
+    s += to_string(value);
+    if (index != v.len() - 1)
+    {
+      s += ", ";
+    }
+  }
+  s += "]";
+  return s;
+}
+
+/// Make an Slice printable.
+template <typename SS, typename T>
+SS& operator<<(SS& os, const Vec<T>& v)
+{
+  os << to_string(v);
+  return os;
+}
+
 }  // namespace detail
 
 template <typename... T>
@@ -966,6 +1064,9 @@ using Option = detail::Option<T>;
 
 template <typename T>
 using Slice = detail::Slice<T>;
+
+template <typename T>
+using Vec = detail::Vec<T>;
 
 template <typename C>
 auto slice(C& container) requires rust::DataSize<C>
@@ -1103,6 +1204,17 @@ struct Borrow<T>
   }
 };
 
+template <typename A>
+struct FromIterator<Vec<A>>
+{
+  template <typename It>
+  static Vec<A> from_iter(It&& it)
+  {
+    std::vector<A> c = FromIterator<std::vector<A>>::from_iter(it);
+    return Vec<A>(std::move(c));
+  }
+};
+
 namespace prelude
 {
 // This approximates the rust std prelude.
@@ -1110,6 +1222,7 @@ namespace prelude
 using rust::Option;
 using rust::Slice;
 using rust::Tuple;
+using rust::Vec;
 
 using rust::drain;
 using rust::iter;
