@@ -41,24 +41,26 @@ std::string type_string()
 
 #define ASSERT_EQ(a, b)                                                                                                \
   do                                                                                                                   \
-  {\
-    const auto a_ = a;                                                                                                                  \
-    const auto b_ = b;                                                                                                                  \
-    if (!(a_ == b_))                                                                                                     \
+  {                                                                                                                    \
+    const auto a_ = a;                                                                                                 \
+    const auto b_ = b;                                                                                                 \
+    if (!(a_ == b_))                                                                                                   \
     {                                                                                                                  \
-      std::cerr << __FILE__ << ":" << __LINE__ << " test failed: a != b (a:" << a_ << ", b:" << b_ << ")" << std::endl;  \
+      std::cerr << __FILE__ << ":" << __LINE__ << " test failed: a != b (a:" << a_ << ", b:" << b_ << ")"              \
+                << std::endl;                                                                                          \
       std::exit(1);                                                                                                    \
     }                                                                                                                  \
   } while (0)
 
 #define ASSERT_NE(a, b)                                                                                                \
   do                                                                                                                   \
-  {\
-    const auto a_ = a;                                                                                                                  \
-    const auto b_ = b;                                                                                                                    \
-    if (!(a_ != b_))                                                                                                     \
+  {                                                                                                                    \
+    const auto a_ = a;                                                                                                 \
+    const auto b_ = b;                                                                                                 \
+    if (!(a_ != b_))                                                                                                   \
     {                                                                                                                  \
-      std::cerr << __FILE__ << ":" << __LINE__ << " test failed: a == b (a:" << a_ << ", b:" << b_ << ")" << std::endl;  \
+      std::cerr << __FILE__ << ":" << __LINE__ << " test failed: a == b (a:" << a_ << ", b:" << b_ << ")"              \
+                << std::endl;                                                                                          \
       std::exit(1);                                                                                                    \
     }                                                                                                                  \
   } while (0)
@@ -133,10 +135,9 @@ int main(int argc, char* argv[])
 
   {
     const auto text = rs::Option(std::string("Hello World!"));
-    rs::Option<rs::usize> text_length = text.as_ref().map([](const auto& v){return (*v).size();});
+    rs::Option<rs::usize> text_length = text.as_ref().map([](const auto& v) { return (*v).size(); });
     ASSERT_EQ(std::move(text_length).unwrap(), 12);
   }
-
 
   {
     std::cout << "Check we can make a mapped iterator" << std::endl;

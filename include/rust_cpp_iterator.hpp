@@ -63,10 +63,12 @@ struct Ref
     return *v_;
   }
 
-  const auto& deref() const {
+  const auto& deref() const
+  {
     return *(*this);
   }
 
+private:
   const T* v_;
 };
 template <typename T>
@@ -97,10 +99,12 @@ struct RefMut
     return *v_;
   }
 
-  auto& deref() {
+  auto& deref()
+  {
     return *(*this);
   }
 
+private:
   T* v_;
 };
 template <typename T>
@@ -184,14 +188,6 @@ namespace detail
 {
 
 using std::to_string;
-template <typename T>
-std::string to_string(T* ptr)
-{
-  std::string res;
-  res += "0x";
-  res += to_string(reinterpret_cast<std::uint64_t>(ptr));
-  return res;
-}
 
 template <typename T>
 struct Option
@@ -310,6 +306,7 @@ struct Option
     return *this;
   }
 
+private:
   bool populated_{ false };
 
   // Hairy storage for the optional without allocation.
@@ -320,32 +317,12 @@ struct Option
   };
 };
 
-/*
-template <std::size_t Index, typename T>
-std::tuple_element_t<Index, Option<T>>& get(Option<T>& opt)
-{
-  if (opt.is_some())
-  {
-    return opt.as_mut().unwrap().deref();
-  }
-  else
-  {
-    throw rust::panic_error("structured binding accessed empty optional");
-  }
-}
-template <std::size_t Index, typename T>
-std::tuple_element_t<Index, Option<T>> get(Option<T>&& opt)
-{
-  return std::forward<Option<T>>(opt).unwrap();
-}
-*/
-
 template <typename T>
 std::string to_string(const Option<T>& opt)
 {
-  if (opt.populated_)
+  if (opt.is_some())
   {
-    return std::string("Some(") + to_string(opt.v_) + ")";
+    return std::string("Some(") + to_string(opt.as_ref().unwrap().deref()) + ")";
   }
   else
   {
@@ -551,7 +528,6 @@ static auto make_iterator(RawIter&& start_, RawIter&& end_, usize size)
   auto start = start_;
   auto end = end_;
   using Wrapper = RefWrapper<decltype(*start)>;
-  //  const auto size = container.size();
   return detail::make_iterator<Wrapper>(
       [start, end]() mutable
       {
@@ -571,13 +547,6 @@ static auto make_iterator(RawIter&& start_, RawIter&& end_, usize size)
 
 template <typename T>
 struct Slice;
-
-//  template <typename T>
-//  struct is_slice : std::false_type{};
-//  template <typename T>
-//  struct is_slice<Slice<T>> : std::true_type{};
-//  template <typename T>
-//  using is_slice_v = is_slice<T>::value;
 
 template <typename T>
 struct Slice
@@ -878,20 +847,3 @@ struct Borrow<T>
 };
 
 }  // namespace rust
-
-/*
-// mixing for structured bindings on options.
-namespace std
-{
-template <typename T>
-struct tuple_size<rust::Option<T>> : std::integral_constant<std::size_t, 1>
-{
-};
-
-template <typename T>
-struct tuple_element<0, rust::Option<T>>
-{
-  using type = T;
-};
-}  // namespace std
-*/
