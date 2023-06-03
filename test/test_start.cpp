@@ -271,11 +271,16 @@ int main(int argc, char* argv[])
   {
     using namespace rust::literals;
     std::vector<int> a{ 1, 2, 3, 4 };
-    std::vector<int> b{ 10, 20, 30, 40 };
+    const std::vector<int> b{ 10, 20, 30, 40 };
     //  auto v = rust::slice(std::vector<int>{});
     //  std::cout << "sliceable vector int: " << rust::Borrowable<std::vector<int>> << std::endl;
     //  std::cout << "sliceable vector int: " << rust::<std::vector<int>> << std::endl;
+    //  std::cout << b.data() << std::endl;
     //  auto i = rust::into_iter(b);
+    //  std::cout << i.next() << std::endl;
+    //  std::cout << i.next() << std::endl;
+    //  std::cout << i.next() << std::endl;
+    //  std::cout << i.next() << std::endl;
     //  auto v = rust::iter(a).zip(b);
     auto v = rust::iter(a).zip(b).map([](const auto& v) { return *v[0_i] + *v[1_i]; }).collect<std::vector<int>>();
     std::vector<int> expected{ 11, 22, 33, 44 };

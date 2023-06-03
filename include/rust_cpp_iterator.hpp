@@ -212,7 +212,7 @@ struct IntoIterator;
 template <HasNext A>
 struct IntoIterator<A>
 {
-  static auto into_iter(A c)
+  static auto into_iter(A& c)
   {
     return c;
   }
@@ -225,7 +225,7 @@ concept Iterable = requires(A a)
 };
 
 template <typename T>
-auto into_iter(T a)
+auto into_iter(T& a)
 {
   return IntoIterator<std::remove_reference_t<T>>::into_iter(a);
 }
@@ -946,7 +946,7 @@ auto slice(C& container) requires rust::DataSize<C>
 }
 
 template <typename C>
-auto slice(C&& container) requires Borrowable<C>
+auto slice(const C& container) requires Borrowable<C>
 {
   return Borrow<C>::borrow(container);
 }
