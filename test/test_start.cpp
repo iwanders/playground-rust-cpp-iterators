@@ -278,9 +278,9 @@ int main(int argc, char* argv[])
     ASSERT_EQ(rust::slice(v), rust::slice(expected));
 
     // And of course, we can also zip with an iterator.
-    auto x = rust::iter(a)
+    auto x = rust::iter(a).copied()
                  .zip(rust::iter(a).map([](const auto& v) { return *v * 10; }))
-                 .map([](const auto& v) { return *v[0_i] + v[1_i]; })
+                 .map([](const auto& v) { return v[0_i] + v[1_i]; })
                  .collect<std::vector<int>>();
     ASSERT_EQ(rust::slice(x), rust::slice(expected));
   }

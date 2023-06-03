@@ -271,6 +271,10 @@ struct Callable {
 rust::detail::static_for_call<3, Callable>(5);
 */
 
+
+// Rolling our own Tuple to make it nice and printable etc.
+// using https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2726r0.html
+
 template <char z, char... rest>
 struct ascii_to_integer
 {
