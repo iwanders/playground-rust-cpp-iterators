@@ -83,18 +83,6 @@ int main(int argc, char* argv[])
   }
 
   {
-    std::cout << "Test the option a bit" << std::endl;
-    {
-      // This shouldn't compile, get on an rvalue is invalid.
-      //  auto& z = rs::Option(3).get();
-      // But this should:
-      auto opt = rs::Option(3);
-      //  auto& z = opt.get();
-      auto x = std::move(opt).unwrap();
-    }
-  }
-
-  {
     auto opt = rs::Option<int>();
     try
     {
@@ -105,23 +93,6 @@ int main(int argc, char* argv[])
       std::cout << e.what() << std::endl;
     }
     std::cout << std::endl;
-  }
-
-  {
-    auto opt = rs::Option(3);
-    auto& [x] = opt;
-    std::cout << "x: " << x << std::endl;
-  }
-
-  {
-    auto opt = rs::Option(3);
-    auto [x] = opt;
-    std::cout << "x: " << x << std::endl;
-  }
-
-  {
-    auto [x] = rs::Option(3);
-    std::cout << "x: " << x << std::endl;
   }
 
   {

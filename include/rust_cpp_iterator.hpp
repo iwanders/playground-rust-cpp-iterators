@@ -320,6 +320,7 @@ struct Option
   };
 };
 
+/*
 template <std::size_t Index, typename T>
 std::tuple_element_t<Index, Option<T>>& get(Option<T>& opt)
 {
@@ -337,6 +338,7 @@ std::tuple_element_t<Index, Option<T>> get(Option<T>&& opt)
 {
   return std::forward<Option<T>>(opt).unwrap();
 }
+*/
 
 template <typename T>
 std::string to_string(const Option<T>& opt)
@@ -877,6 +879,7 @@ struct Borrow<T>
 
 }  // namespace rust
 
+/*
 // mixing for structured bindings on options.
 namespace std
 {
@@ -891,3 +894,4 @@ struct tuple_element<0, rust::Option<T>>
   using type = T;
 };
 }  // namespace std
+*/
