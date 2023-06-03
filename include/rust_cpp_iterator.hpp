@@ -62,6 +62,11 @@ struct Ref
     }
     return *v_;
   }
+
+  const auto& deref() const {
+    return *(*this);
+  }
+
   const T* v_;
 };
 template <typename T>
@@ -91,6 +96,11 @@ struct RefMut
     }
     return *v_;
   }
+
+  auto& deref() {
+    return *(*this);
+  }
+
   T* v_;
 };
 template <typename T>
@@ -315,7 +325,7 @@ std::tuple_element_t<Index, Option<T>>& get(Option<T>& opt)
 {
   if (opt.is_some())
   {
-    return *(opt.as_mut().unwrap());
+    return opt.as_mut().unwrap().deref();
   }
   else
   {
@@ -367,7 +377,7 @@ struct RangeIter
 {
   T& operator*()
   {
-    return *(opt_.as_mut().unwrap());
+    return opt_.as_mut().unwrap().deref();
   }
 
   bool operator!=(const auto& other)
@@ -786,8 +796,8 @@ auto drain(C&& container)
       end = Option<typename C::iterator>(container.end());
     }
 
-    auto& start_it = *(start.as_mut().unwrap());
-    auto& end_it = *(end.as_mut().unwrap());
+    auto& start_it = start.as_mut().unwrap().deref();
+    auto& end_it = end.as_mut().unwrap().deref();
     if (start_it != end_it)
     {
       auto v = std::move(*start_it);
