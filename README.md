@@ -89,9 +89,25 @@ concepts instead of SFINAE
 Example of using a slice method, like `starts_with`.
 ```cpp
 
+    // Definition of starts_with is:
+
+    template <Borrowable BorrowableType>
+    bool starts_with(const BorrowableType& original)
+        const requires std::equality_comparable_with<T, typename Borrow<BorrowableType>::type>
+    {
+      const auto needle = Borrow<BorrowableType>::borrow(original);
+      const auto n = needle.len();
+      return len() >= n && needle == (*this)({}, n);
+    }
+
+    // So we can pass anything that is borrowable, and the borrowed result has a type that is
+    // comparable with our current type.
+
+    // Create the vector to test with.
     std::vector<char> a{ 'H', 'e', 'l', 'l', 'o' };
     auto slice_hello = rs::slice(a);
 
+    // starts_with with std::vector
     {
       std::vector<char> vec_hel{ 'H', 'e', 'l' };
       ASSERT_EQ(slice_hello.starts_with(rs::slice(vec_hel)), true);
