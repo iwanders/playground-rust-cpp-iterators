@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
   {
     std::cout << "Check if we can collect into an explicit type." << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
-    auto and_back = rs::iter(a).copied().collect<std::vector<float>>();
+    auto and_back = rs::iter(a).collect<std::vector<float>>();
     for (auto& v : and_back)
     {
       std::cout << v << ", ";
@@ -587,14 +587,26 @@ int main(int argc, char* argv[])
   {
     using namespace rust::prelude;
     Vec<u8> a{ 0x61, 0x62, 0x63, 0x64 };
-    Vec<u16> b = a.iter().copied().collect();
+    Vec<char> b = a.iter().copied().map([](auto v) { return v - 0x20; }).collect();
+    std::cout << b << std::endl;
+    std::string v = b.iter().collect();
+    std::cout << v << std::endl;
+
     ASSERT_EQ(a.starts_with("abc"), true);
     ASSERT_EQ(a.last(), Option<rust::Ref<u8>>(&a[3]));
     ASSERT_EQ(a.last().copied(), Option<u8>(0x64));
     ASSERT_EQ(a.first(), Option<rust::Ref<u8>>(&a[0]));
     ASSERT_EQ(a.first().copied(), Option<u8>(0x61));
+
     std::cout << a << std::endl;
     std::cout << a.first() << std::endl;
+    const auto use_stdvec = [](std::vector<u8>& v) { v.front() = 33; };
+    use_stdvec(a);
+    ASSERT_EQ(a.first().copied(), Option<u8>(33));
+    std::cout << a.first() << std::endl;
+
+    const auto use_conststdvec = [](const std::vector<u8>& v) {};
+    use_conststdvec(a);
   }
 
   return 0;

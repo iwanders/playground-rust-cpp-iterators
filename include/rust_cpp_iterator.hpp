@@ -154,6 +154,24 @@ using RefWrapper = std::conditional_t<std::is_const_v<std::remove_reference_t<T>
                                       RefMut<std::remove_cvref_t<T>>>;
 
 template <typename A>
+concept Dereferencable = requires(A a)
+{
+  *a;
+};
+
+template <typename T>
+auto deref(T&& v) requires(!Dereferencable<T>)
+{
+  return v;
+}
+
+template <typename T>
+auto deref(T&& v) requires Dereferencable<T>
+{
+  return deref(*v);
+}
+
+template <typename A>
 struct FromIterator;
 
 template <typename A>
@@ -177,7 +195,7 @@ struct FromIterator<std::vector<A>>
       auto z = it.next();
       if (z.is_some())
       {
-        c.push_back(std::move(z).unwrap());
+        c.push_back(deref(std::move(z).unwrap()));
       }
       else
       {
@@ -185,6 +203,40 @@ struct FromIterator<std::vector<A>>
       }
     }
     return c;
+  }
+};
+
+template <>
+struct FromIterator<std::string>
+{
+  template <typename It>
+  static std::string from_iter(It&& it)
+  {
+    std::string s;
+    auto [lower, upper] = it.size_hint();
+    if (std::size_t limit; upper.Some(limit))
+    {
+      s.reserve(limit);
+    }
+    else
+    {
+      s.reserve(lower);
+    }
+    while (true)
+    {
+      auto z = it.next();
+      if (z.is_some())
+      {
+        auto c = deref(std::move(z).unwrap());
+        static_assert(std::is_same_v<decltype(c), char>, "may only collect string from char");
+        s.push_back(c);
+      }
+      else
+      {
+        break;
+      }
+    }
+    return s;
   }
 };
 
@@ -1020,8 +1072,13 @@ struct Vec : SliceInterface<Vec<T>, T>
     return v_.size();
   }
 
-  // We could implement the full vector interface here, but mehh.
-  operator std::vector<T>()
+  // We could implement the full vector interface here, but mehh, we can make our vector act
+  // like it is a std::vector by doing the following;
+  operator std::vector<T>&()
+  {
+    return v_;
+  }
+  operator const std::vector<T>&() const
   {
     return v_;
   }
