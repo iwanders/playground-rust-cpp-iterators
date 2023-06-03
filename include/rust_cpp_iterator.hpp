@@ -42,6 +42,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace rust
 {
 
+struct panic_error : std::runtime_error
+{
+  inline panic_error(const char* s) : std::runtime_error(s){};
+  inline panic_error(const std::string& s) : std::runtime_error(s){};
+};
+
 template <typename T>
 struct Ref
 {
@@ -51,6 +57,10 @@ struct Ref
   Ref(){};
   const T& operator*() const
   {
+    if (v_ == nullptr)
+    {
+      throw panic_error("accessing dangling reference, just c++ things");
+    }
     return *v_;
   }
   const T* v_;
@@ -78,6 +88,10 @@ struct RefMut
   RefMut(){};
   T& operator*()
   {
+    if (v_ == nullptr)
+    {
+      throw panic_error("accessing dangling reference, just c++ things");
+    }
     return *v_;
   }
   T* v_;
@@ -148,12 +162,6 @@ concept DataSize = requires(A a)
 {
   a.data();
   a.size();
-};
-
-struct panic_error : std::runtime_error
-{
-  inline panic_error(const char* s) : std::runtime_error(s){};
-  inline panic_error(const std::string& s) : std::runtime_error(s){};
 };
 
 template <typename A>
@@ -256,13 +264,31 @@ struct Option
     }
   };
 
+  Option<Ref<T>> as_ref() const
+  {
+    if (is_some())
+    {
+      return Option<Ref<T>>(&v_);
+    }
+    else
+    {
+      return Option<Ref<T>>();
+    }
+  }
+
   template <typename... Args>
   Option(Args... v) : v_(v...), populated_{ true } {};
-
   Option(const T& v) : v_(v), populated_{ true } {};
   //  Option(T&& v) : v_{ v }, populated_{ true } {};
   Option() : populated_{ false } {};
   Option(const Option<T>& v) : populated_{ v.populated_ }, v_{ v.v_ } {};
+  ~Option()
+  {
+    if (populated_)
+    {
+      std::destroy_at(&v_);
+    }
+  }
 
   Option<T>& operator=(Option<T>&& v)
   {
@@ -712,7 +738,8 @@ using Slice = detail::Slice<T>;
 template <typename C>
 auto slice(C& container) requires rust::DataSize<C>
 {
-  return detail::Slice<typename C::value_type>::from_raw_parts(container.data(), container.size());
+  using SliceType = std::conditional_t<std::is_const_v<C>, const typename C::value_type, typename C::value_type>;
+  return detail::Slice<SliceType>::from_raw_parts(container.data(), container.size());
 }
 
 template <typename C>
