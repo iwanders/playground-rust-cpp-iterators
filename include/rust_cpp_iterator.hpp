@@ -191,13 +191,6 @@ struct Option
 {
   using type = T;
 
-  // We don't actually use get(), but... why doesn't the std::optional do this `&&` trick?
-  T& get() && = delete;  // Calling get() on rvalue results in dangling reference.
-  T& get() &
-  {
-    return v_;
-  }
-
   template <std::invocable<T> F>
   Option<typename std::invoke_result<F, T>::type> map(F&& f)
   {
@@ -276,6 +269,18 @@ struct Option
     }
   }
 
+  Option<RefMut<T>> as_mut()
+  {
+    if (is_some())
+    {
+      return Option<RefMut<T>>(&v_);
+    }
+    else
+    {
+      return Option<RefMut<T>>();
+    }
+  }
+
   template <typename... Args>
   Option(Args... v) : v_(v...), populated_{ true } {};
   Option(const T& v) : v_(v), populated_{ true } {};
@@ -313,7 +318,7 @@ std::tuple_element_t<Index, Option<T>>& get(Option<T>& opt)
 {
   if (opt.is_some())
   {
-    return opt.get();
+    return *(opt.as_mut().unwrap());
   }
   else
   {
@@ -365,7 +370,7 @@ struct RangeIter
 {
   T& operator*()
   {
-    return opt_.get();  // bah, bah, bah.
+    return *(opt_.as_mut().unwrap());
   }
 
   bool operator!=(const auto& other)
@@ -457,9 +462,10 @@ struct Iterator
     using U = std::tuple<usize, T>;
     auto generator = [this, f, i]() mutable -> Option<U>
     {
-      if (T z; f().Some(z))
+      auto v = f();
+      if (v.is_some())
       {
-        auto res = Option<U>(i, std::move(z));
+        auto res = Option<U>(i, std::move(v).unwrap());
         i++;
         return res;
       }
@@ -783,8 +789,8 @@ auto drain(C&& container)
       end = Option<typename C::iterator>(container.end());
     }
 
-    auto& start_it = start.get();
-    auto& end_it = end.get();
+    auto& start_it = *(start.as_mut().unwrap());
+    auto& end_it = *(end.as_mut().unwrap());
     if (start_it != end_it)
     {
       auto v = std::move(*start_it);
