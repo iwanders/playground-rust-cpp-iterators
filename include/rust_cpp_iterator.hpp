@@ -212,8 +212,6 @@ auto static_for(F&& a)
 }
 // rust::detail::static_for<3>([](const long unsigned int z) { std::cout << z << std::endl; });
 
-
-
 template <typename T, std::size_t... I, typename... Args>
 auto static_for_call_impl(std::index_sequence<I...>, Args&&... args)
 {
@@ -233,8 +231,6 @@ struct Callable {
 };
 rust::detail::static_for_call<3, Callable>(5);
 */
-
-
 
 template <char z, char... rest>
 struct ascii_to_integer
@@ -264,6 +260,12 @@ struct Tuple
     return std::get<T::type::value>(v_);
   }
 
+  template <typename T>
+  const auto& operator[](T z) const
+  {
+    return std::get<T::type::value>(v_);
+  }
+
   template <usize N>
   auto& get()
   {
@@ -279,12 +281,21 @@ private:
   std::tuple<Types...> v_;
 };
 
-struct TuplePrinter {
+using std::to_string;
+std::string to_string(const std::string& s)
+{
+  return s;
+}
+
+struct TuplePrinter
+{
   template <std::size_t N, typename T>
-  static auto call(std::string& s, std::size_t length, T&& t) {
-    using std::to_string;
+  static auto call(std::string& s, std::size_t length, T&& t)
+  {
+    //  using rust::to_string;
     s += to_string(t.template get<N>());
-    if (N != (length - 1)) {
+    if (N != (length - 1))
+    {
       s += ", ";
     }
   }
@@ -984,7 +995,15 @@ struct Borrow<T>
 namespace prelude
 {
 using detail::operator""_i;
-}
+using rust::Option;
+using rust::Slice;
+using rust::Tuple;
+
+using rust::drain;
+using rust::iter;
+using rust::iter_mut;
+using rust::slice;
+}  // namespace prelude
 
 }  // namespace rust
 
@@ -998,7 +1017,14 @@ struct tuple_size<rust::Tuple<T...>> : std::integral_constant<std::size_t, sizeo
 template <std::size_t N, typename... T>
 struct tuple_element<N, rust::Tuple<T...>>
 {
-  using type = decltype(std::declval<rust::Tuple<T...>>().template get<N>());
+  using type = std::tuple_element<N, std::tuple<T...>>::type;
+};
+
+template <std::size_t N, typename... T>
+struct tuple_element<N, const rust::Tuple<T...>>
+{
+  //  using type = const decltype(std::declval<const rust::Tuple<T...>>().template get<N>());
+  using type = const std::tuple_element<N, std::tuple<T...>>::type;
 };
 
 template <std::size_t N, typename... T>
@@ -1008,6 +1034,16 @@ auto& get(rust::Tuple<T...>& t)
 }
 template <std::size_t N, typename... T>
 auto const& get(const rust::Tuple<T...>& t)
+{
+  return t.template get<N>();
+}
+template <std::size_t N, typename... T>
+auto const&& get(const rust::Tuple<T...>&& t)
+{
+  return t.template get<N>();
+}
+template <std::size_t N, typename... T>
+auto&& get(rust::Tuple<T...>&& t)
 {
   return t.template get<N>();
 }

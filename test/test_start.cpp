@@ -65,58 +65,8 @@ std::string type_string()
     }                                                                                                                  \
   } while (0)
 
-struct Foo
-{
-  /* // Right associative, so needs parenthesis
-  template <typename T>
-  auto& operator,(T v) {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
-
-    std::cout << T::value << std::endl;
-    if constexpr (T::value == 0) {
-      return b_;
-    } else {
-      return a_;
-    }
-  }
-  */
-  template <typename T>
-  auto& operator[](T z)
-  {
-    std::cout << T::value << std::endl;
-    if constexpr (T::value == 0)
-    {
-      return b_;
-    }
-    else
-    {
-      return a_;
-    }
-  }
-  unsigned int a_{ 0xDEADBEEFu };
-  float b_{ 133.7 };
-};
-
-template <char z, char... rest>
-struct ascii_to_integer
-{
-  // chr(0x30) == '0'
-  using type = std::integral_constant<std::size_t, z - 0x30>;
-  static constexpr auto value = std::integral_constant<std::size_t, z - 0x30>{};
-};
-template <char... str>
-constexpr auto operator"" _i()
-{
-  return ascii_to_integer<str...>::value;
-}
-
 int main(int argc, char* argv[])
 {
-  //  Foo z;
-  //  std::cout << z[0_i] << std::endl;
-  //  std::cout << z[1_i] << std::endl;
-  //  return 1;
-
   namespace rs = rust;
 
   {
@@ -491,17 +441,99 @@ int main(int argc, char* argv[])
   std::cout << type_string<rs::RefWrapper<const int*>>() << std::endl;
   std::cout << type_string<rs::RefWrapper<const int* const>>() << std::endl;
 
-  // Test our tuple, which is nice.
+  // Test our tuple, which is nice... printable, indexable, etc etc.
   {
-    const auto t = rs::Tuple(3.3, 5.5);
-    //  using std::get;
-    //  get<0>(t);
-    //  std::get<0>(t);
-    //  std::get<1>(t);
+    using namespace rust::prelude;
+    const auto t = Tuple(3, 5.5);
     std::cout << t << std::endl;
-    //  rust::detail::static_for<3>([](const long unsigned int z) { std::cout << z << std::endl; });
-    //  rust::detail::static_for_call<3, Callable>(5);
-      
+    std::cout << "First: " << t[0_i] << std::endl;
+    std::cout << "Second: " << t[1_i] << std::endl;
+
+    auto t2 = Tuple(std::string("abc"), 1337.0);
+    t2[0_i] = "Hello";
+    std::cout << "First: " << t2[0_i] << std::endl;
+    auto& [s, v] = t2;
+    s = "Nope";
+    std::cout << "s: " << s << ", "
+              << "v:" << v << std::endl;
+    std::cout << t2 << std::endl;
+
+    // Test all possible permutations.
+    {
+      const Tuple<double, int> r_t = Tuple(3.3, 5);
+      const std::tuple<double, int> s_t = std::make_tuple(3.3, 5);
+      {
+        const auto& [ra, rb] = r_t;
+        const auto& [sa, sb] = s_t;
+        //  std::cout << "ra: " << type_string<decltype(ra)>() << std::endl;
+        //  std::cout << "sa: " << type_string<decltype(sa)>() << std::endl;
+        ASSERT_EQ((std::is_same<decltype(ra), const double>::value), true);
+        ASSERT_EQ((std::is_same<decltype(rb), const int>::value), true);
+        ASSERT_EQ((std::is_same<decltype(sa), const double>::value), true);
+        ASSERT_EQ((std::is_same<decltype(sb), const int>::value), true);
+
+        ASSERT_EQ(r_t[0_i], 3.3);
+        ASSERT_EQ(r_t[1_i], 5);
+      }
+      {
+        const auto [ra, rb] = r_t;
+        const auto [sa, sb] = s_t;
+        //  std::cout << "ra: " << type_string<decltype(ra)>() << std::endl;
+        //  std::cout << "sa: " << type_string<decltype(sa)>() << std::endl;
+
+        ASSERT_EQ((std::is_same<decltype(ra), const double>::value), true);
+        ASSERT_EQ((std::is_same<decltype(rb), const int>::value), true);
+        ASSERT_EQ((std::is_same<decltype(sa), const double>::value), true);
+        ASSERT_EQ((std::is_same<decltype(sb), const int>::value), true);
+      }
+    }
+
+    {
+      Tuple<double, int> r_t = Tuple(3.3, 5);
+      std::tuple<double, int> s_t = std::make_tuple(3.3, 5);
+      {
+        auto& [ra, rb] = r_t;
+        auto& [sa, sb] = s_t;
+        std::cout << "ra: " << type_string<decltype(ra)>() << std::endl;
+        std::cout << "sa: " << type_string<decltype(sa)>() << std::endl;
+        ASSERT_EQ((std::is_same<decltype(ra), double>::value), true);
+        ASSERT_EQ((std::is_same<decltype(rb), int>::value), true);
+        ASSERT_EQ((std::is_same<decltype(sa), double>::value), true);
+        ASSERT_EQ((std::is_same<decltype(sb), int>::value), true);
+
+        ra = 7.5;
+        sa = 7.5;
+        ASSERT_EQ(std::get<0>(r_t), 7.5);
+        ASSERT_EQ(r_t[0_i], 7.5);
+        ASSERT_EQ(std::get<0>(s_t), 7.5);
+        ASSERT_EQ(std::get<1>(s_t), 5);
+
+        r_t[0_i] = 10.1;
+        r_t[1_i] = 1;
+        ASSERT_EQ(r_t[0_i], 10.1);
+        ASSERT_EQ(r_t[1_i], 1);
+      }
+
+      {
+        auto [ra, rb] = r_t;
+        auto [sa, sb] = s_t;
+        std::cout << "ra: " << type_string<decltype(ra)>() << std::endl;
+        std::cout << "sa: " << type_string<decltype(sa)>() << std::endl;
+
+        ASSERT_EQ((std::is_same<decltype(ra), double>::value), true);
+        ASSERT_EQ((std::is_same<decltype(rb), int>::value), true);
+        ASSERT_EQ((std::is_same<decltype(sa), double>::value), true);
+        ASSERT_EQ((std::is_same<decltype(sb), int>::value), true);
+        ra = 7.5;
+        sa = 7.5;
+
+        // Values should be unmodified from the previous block.
+        ASSERT_EQ(r_t[0_i], 10.1);
+        ASSERT_EQ(r_t[1_i], 1);
+        ASSERT_EQ(std::get<0>(s_t), 7.5);
+        ASSERT_EQ(std::get<1>(s_t), 5);
+      }
+    }
   }
 
   return 0;
