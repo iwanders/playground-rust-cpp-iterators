@@ -779,11 +779,11 @@ struct Borrow<T>
   static constexpr std::size_t N = std::extent_v<std::remove_cvref_t<T>>;
 
   // For char[N], we pop the null byte at the end.
-  static rust::Slice<type> borrow(const type (s)[N]) requires std::is_same<type, const char>::value
+  static rust::Slice<type> borrow(const type* s) requires std::is_same<type, const char>::value
   {
     return detail::Slice<type>::from_raw_parts(s, N - 1);
   }
-  static rust::Slice<type> borrow(const type (s)[N]) requires (!std::is_same<type, const char>::value)
+  static rust::Slice<type> borrow(const type* s) requires (!std::is_same<type, const char>::value)
   {
     return detail::Slice<type>::from_raw_parts(s, N);
   }
