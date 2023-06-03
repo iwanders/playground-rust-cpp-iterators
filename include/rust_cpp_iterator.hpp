@@ -55,6 +55,9 @@ using i8 = std::int8_t;
 using i16 = std::int16_t;
 using i32 = std::int32_t;
 using i64 = std::int64_t;
+
+using f32 = float;
+using f64 = double;
 }  // namespace types
 
 struct panic_error : std::runtime_error
@@ -250,7 +253,7 @@ struct Tuple
 {
   static constexpr usize length = sizeof...(Types);
 
-  Tuple(Types&&... v) : v_(v...)
+  Tuple(Types... v) : v_(v...)
   {
   }
 
@@ -546,9 +549,9 @@ struct Iterator
     return f_();
   };
 
-  std::pair<usize, Option<usize>> size_hint() const
+  Tuple<usize, Option<usize>> size_hint() const
   {
-    return { size_, Option<usize>() };
+    return Tuple<usize, Option<usize>>(size_, Option<usize>());
   }
 
   template <std::invocable<T> F>
@@ -994,7 +997,8 @@ struct Borrow<T>
 
 namespace prelude
 {
-using detail::operator""_i;
+// This approximates the rust std prelude.
+
 using rust::Option;
 using rust::Slice;
 using rust::Tuple;
@@ -1003,6 +1007,11 @@ using rust::drain;
 using rust::iter;
 using rust::iter_mut;
 using rust::slice;
+
+using namespace rust::types;
+
+// The index type for our tuple.
+using detail::operator""_i;
 }  // namespace prelude
 
 }  // namespace rust
@@ -1023,7 +1032,6 @@ struct tuple_element<N, rust::Tuple<T...>>
 template <std::size_t N, typename... T>
 struct tuple_element<N, const rust::Tuple<T...>>
 {
-  //  using type = const decltype(std::declval<const rust::Tuple<T...>>().template get<N>());
   using type = const std::tuple_element<N, std::tuple<T...>>::type;
 };
 
@@ -1037,14 +1045,14 @@ auto const& get(const rust::Tuple<T...>& t)
 {
   return t.template get<N>();
 }
-template <std::size_t N, typename... T>
-auto const&& get(const rust::Tuple<T...>&& t)
-{
-  return t.template get<N>();
-}
-template <std::size_t N, typename... T>
-auto&& get(rust::Tuple<T...>&& t)
-{
-  return t.template get<N>();
-}
+//  template <std::size_t N, typename... T>
+//  auto const&& get(const rust::Tuple<T...>&& t)
+//  {
+//  return t.template get<N>();
+//  }
+//  template <std::size_t N, typename... T>
+//  auto&& get(rust::Tuple<T...>&& t)
+//  {
+//  return t.template get<N>();
+//  }
 }  // namespace std

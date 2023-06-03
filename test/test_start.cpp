@@ -39,6 +39,16 @@ std::string type_string()
   return __PRETTY_FUNCTION__;
 }
 
+template <typename T>
+void print_vector(const std::vector<T>& c)
+{
+  for (const auto& v : c)
+  {
+    std::cout << v << ", ";
+  }
+  std::cout << std::endl;
+};
+
 #define ASSERT_EQ(a, b)                                                                                                \
   do                                                                                                                   \
   {                                                                                                                    \
@@ -158,17 +168,9 @@ int main(int argc, char* argv[])
   {
     std::cout << "Check if we can collect into an inferred type " << std::endl;
 
-    const auto print_vec = [](const std::vector<int>& c)
-    {
-      for (auto& v : c)
-      {
-        std::cout << v << ", ";
-      }
-      std::cout << std::endl;
-    };
-
     const std::vector<int> a{ 1, 2, 3, 4 };
 
+    const auto print_vec = [](const std::vector<int>& v) { print_vector(v); };
     // Return type idiom, type inferred from conversion to the type on the left
     std::vector<int> and_back = rs::iter(a).copied().collect();
     // print it.
@@ -534,6 +536,13 @@ int main(int argc, char* argv[])
         ASSERT_EQ(std::get<1>(s_t), 5);
       }
     }
+  }
+
+  {
+    using namespace rust::prelude;
+    std::vector<u32> z{ 1, 2, 3, 4 };
+    auto s = iter(z).map([](const auto& v) { return (*v) * 2; }).collect<std::vector<f32>>();
+    print_vector(s);
   }
 
   return 0;
