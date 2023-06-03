@@ -225,14 +225,14 @@ int main(int argc, char* argv[])
   {
     std::cout << "Check if sum works" << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
-    auto sum = rs::iter(a).map([](const int* v) { return *v * *v; }).sum();
+    auto sum = rs::iter(a).map([](const auto& v) { return *v * *v; }).sum();
     std::cout << sum << std::endl;
   }
 
   {
     std::cout << "Check if range based for loop works." << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
-    for (const auto& v : rs::iter(a).map([](const int* v) { return *v * *v; }))
+    for (const auto& v : rs::iter(a).map([](const auto& v) { return *v * *v; }))
     {
       std::cout << " " << v;
     }
@@ -247,6 +247,7 @@ int main(int argc, char* argv[])
       *v = *v * *v;
       std::cout << " " << *v;
     }
+    ASSERT_EQ(rs::slice(a), rs::slice(std::vector<int>{ 1, 4, 9, 16 }));
     std::cout << std::endl;
   }
 
@@ -264,9 +265,9 @@ int main(int argc, char* argv[])
   {
     std::cout << "Check any value is odd." << std::endl;
     const std::vector<int> a{ 2, 4, 6 };
-    const auto has_even = rs::iter(a).any([](const int* v) { return *v % 2 == 0; });
+    const auto has_even = rs::iter(a).any([](const auto& v) { return *v % 2 == 0; });
     std::cout << "has_even:" << has_even << std::endl;
-    const auto has_odd = rs::iter(a).any([](const int* v) { return *v % 2 == 0; });
+    const auto has_odd = rs::iter(a).any([](const auto& v) { return *v % 2 == 0; });
     std::cout << "has_odd:" << has_odd << std::endl;
     std::cout << std::endl;
   }
@@ -289,8 +290,9 @@ int main(int argc, char* argv[])
   {
     std::cout << "Drain into map." << std::endl;
 
-    auto z =
-        rs::drain(std::vector<int>{ 1, 2, 3, 4 }).map([](const int& v) { return v * v; }).collect<std::vector<float>>();
+    auto z = rs::drain(std::vector<int>{ 1, 2, 3, 4 })
+                 .map([](const auto& v) { return v * v; })
+                 .collect<std::vector<float>>();
     for (auto& x : z)
     {
       std::cout << " " << x << std::endl;
@@ -353,8 +355,9 @@ int main(int argc, char* argv[])
     std::cout << "Non const iter!" << std::endl;
     std::vector<int> a{ 1, 2, 3, 4 };
     auto slice = rs::slice(a);
-    for (auto* x : slice.iter_mut())
+    for (auto& x : slice.iter_mut())
     {
+      std::cout << x << std::endl;
       *x = *x * *x;
     }
     std::cout << "s: " << slice << std::endl;
@@ -446,6 +449,12 @@ int main(int argc, char* argv[])
       //  ASSERT_EQ(slice_hello.starts_with(foo), true);
     }
   }
+
+  std::cout << type_string<rs::RefWrapper<int>>() << std::endl;
+  std::cout << type_string<rs::RefWrapper<int&>>() << std::endl;
+  std::cout << type_string<rs::RefWrapper<const int>>() << std::endl;
+  std::cout << type_string<rs::RefWrapper<const int*>>() << std::endl;
+  std::cout << type_string<rs::RefWrapper<const int* const>>() << std::endl;
 
   return 0;
 }

@@ -35,8 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 
 // Container c{1,2,3};
-// iter(c) -> Iterator<const T*>
-// iter_mut(c) -> Iterator<T*>
+// iter(c) -> Iterator<Ref<T>>
+// iter_mut(c) -> Iterator<RefMut<T>>
 // drain(std::move(c)) -> Iterator<T>
 
 namespace rust
@@ -45,7 +45,10 @@ namespace rust
 template <typename T>
 struct Ref
 {
+  using type = T;
   Ref(const T* v) : v_(v){};
+
+  Ref(){};
   const T& operator*() const
   {
     return *v_;
@@ -53,15 +56,49 @@ struct Ref
   const T* v_;
 };
 template <typename T>
+std::string to_string(const Ref<T>& v)
+{
+  using std::to_string;
+  return to_string(*v);
+  //  return "Ref(" + to_string(*v) + ")";
+}
+template <typename SS, typename T>
+SS& operator<<(SS& os, const Ref<T>& ref)
+{
+  os << to_string(ref);
+  return os;
+}
+
+template <typename T>
 struct RefMut
 {
+  using type = T;
   RefMut(T* v) : v_(v){};
-  T& operator*() const
+
+  RefMut(){};
+  T& operator*()
   {
     return *v_;
   }
   T* v_;
 };
+template <typename T>
+std::string to_string(RefMut<T>& v)
+{
+  using std::to_string;
+  return to_string(*v);
+  //  return "RefMut(" + to_string(*v) + ")";
+}
+template <typename SS, typename T>
+SS& operator<<(SS& os, RefMut<T>& ref)
+{
+  os << to_string(ref);
+  return os;
+}
+
+template <typename T>
+using RefWrapper = std::conditional_t<std::is_const_v<std::remove_reference_t<T>>, Ref<const std::remove_cvref_t<T>>,
+                                      RefMut<std::remove_cvref_t<T>>>;
 
 using usize = std::size_t;
 
@@ -472,19 +509,20 @@ static auto make_iterator(RawIter&& start_, RawIter&& end_, usize size)
 {
   auto start = start_;
   auto end = end_;
+  using Wrapper = RefWrapper<decltype(*start)>;
   //  const auto size = container.size();
-  return detail::make_iterator<Z>(
+  return detail::make_iterator<Wrapper>(
       [start, end]() mutable
       {
         if (start != end)
         {
-          auto v = &(*start);
+          auto v = Wrapper(std::addressof(*start));
           start++;
           return detail::Option(v);
         }
         else
         {
-          return detail::Option<Z>();
+          return detail::Option<Wrapper>();
         }
       },
       size);
@@ -561,18 +599,20 @@ struct Slice
   {
     auto start = start_;
     auto end = start_ + len_;
-    return detail::make_iterator<const T*>(
+
+    using Wrapper = RefWrapper<const T>;
+    return detail::make_iterator<Wrapper>(
         [start, end]() mutable
         {
           if (start != end)
           {
-            auto v = start;
+            auto v = Wrapper(start);
             start++;
-            return detail::Option(static_cast<const T*>(v));
+            return detail::Option(std::move(v));
           }
           else
           {
-            return detail::Option<const T*>();
+            return detail::Option<Wrapper>();
           }
         },
         len_);
@@ -582,18 +622,19 @@ struct Slice
   {
     auto start = start_;
     auto end = start_ + len_;
-    return detail::make_iterator<T*>(
+    using Wrapper = RefWrapper<T>;
+    return detail::make_iterator<Wrapper>(
         [start, end]() mutable
         {
           if (start != end)
           {
-            auto v = start;
+            auto v = Wrapper(start);
             start++;
-            return detail::Option(v);
+            return detail::Option(std::move(v));
           }
           else
           {
-            return detail::Option<T*>();
+            return detail::Option<Wrapper>();
           }
         },
         len_);
