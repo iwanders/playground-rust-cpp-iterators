@@ -426,7 +426,7 @@ int main(int argc, char* argv[])
     }
 
     // starts_with c array :|
-    // This is problematic, because we can't see the difference between a c array of chars and a 
+    // This is problematic, because we can't see the difference between a c array of chars and a
     // string literal, they are both a fixed length char array. With a string literal it also
     // contains the nullbyte at the end, so doing a .starts_with("abc") has a 4 long char array of
     // {'a', 'b', 'c', 0}.

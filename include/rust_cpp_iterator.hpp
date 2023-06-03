@@ -630,6 +630,11 @@ struct Slice
     return len() >= n && needle == (*this)({}, n);
   }
 
+  const T* as_ptr() const
+  {
+    return start_;
+  }
+
 private:
   T* start_;
   std::size_t len_;
@@ -727,10 +732,9 @@ auto drain(C&& container)
   return detail::make_iterator<typename C::value_type>(std::move(f), size);
 }
 
-
-
-template<class T>
-concept ConstCharString = std::is_same_v<std::remove_cvref_t<T>, const char*>;
+template <class T>
+concept ConstCharString = std::is_same_v < std::remove_cvref_t<T>,
+const char* > ;
 
 template <ConstCharString T>
 struct Borrow<T>
@@ -762,14 +766,15 @@ struct Borrow<T>
 template <typename T>
 struct Borrow<rust::Slice<T>>
 {
-  using type = T;
-  static rust::Slice<T> borrow(const rust::Slice<T>& s)
+  using type = const T;
+  static rust::Slice<type> borrow(const rust::Slice<T>& s)
   {
-    return s;
+    return detail::Slice<type>::from_raw_parts(s.as_ptr(), s.len());
+    ;
   }
 };
 
-template<typename T>
+template <typename T>
 concept IsArray = std::is_array_v<std::remove_cvref_t<T>>;
 
 template <IsArray T>
@@ -783,7 +788,7 @@ struct Borrow<T>
   {
     return detail::Slice<type>::from_raw_parts(s, N - 1);
   }
-  static rust::Slice<type> borrow(const type* s) requires (!std::is_same<type, const char>::value)
+  static rust::Slice<type> borrow(const type* s) requires(!std::is_same<type, const char>::value)
   {
     return detail::Slice<type>::from_raw_parts(s, N);
   }
