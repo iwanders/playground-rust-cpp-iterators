@@ -250,6 +250,17 @@ int main(int argc, char* argv[])
   }
 
   {
+    using namespace rust::literals;
+    std::vector<int> a{ 1, 2, 3, 4 };
+    auto it_a = rust::iter(a);
+    std::vector<int> b{ 10, 20, 30, 40 };
+    auto it_b = rust::iter(b);
+    auto v = std::move(it_a).zip(it_b).map([](const auto& v) { return *v[0_i] + *v[1_i]; }).collect<std::vector<int>>();
+    std::vector<int> expected{ 11, 22, 33, 44 };
+    ASSERT_EQ(rust::slice(v), rust::slice(expected));
+  }
+
+  {
     std::cout << "Check any value is odd." << std::endl;
     const std::vector<int> a{ 2, 4, 6 };
     const auto has_even = rs::iter(a).any([](const auto& v) { return *v % 2 == 0; });
@@ -540,9 +551,9 @@ int main(int argc, char* argv[])
 
   {
     using namespace rust::prelude;
-    std::vector<u32> z{ 1, 2, 3, 4 };
-    auto s = iter(z).map([](const auto& v) { return (*v) * 2; }).collect<std::vector<f32>>();
-    print_vector(s);
+    std::vector<u32> a{ 1, 2, 3, 4 };
+    std::vector<u8> b{ 0x30, 0x30, 0x30, 0x30 };
+    auto s = iter(a).map([](const auto& v) { return (*v) * 2; }).collect<std::vector<f32>>();
   }
 
   return 0;

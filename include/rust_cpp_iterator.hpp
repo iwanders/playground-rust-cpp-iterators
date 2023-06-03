@@ -60,6 +60,14 @@ using f32 = float;
 using f64 = double;
 }  // namespace types
 
+namespace detail
+{
+
+template <typename T>
+struct Slice;
+
+}
+
 struct panic_error : std::runtime_error
 {
   inline panic_error(const char* s) : std::runtime_error(s){};
@@ -200,8 +208,59 @@ concept Borrowable = requires(A a)
   Borrow<A>::borrow(a);
 };
 
+template <typename A>
+concept Sliceable = requires(A a)
+{
+  slice(a);
+};
+
+template <typename A>
+concept HasNext = requires(A a)
+{
+  a.next();
+};
+
+template <class A>
+struct IntoIterator;
+
+template <Sliceable A>
+struct IntoIterator<A>
+{
+  static auto into_iter(A c)
+  {
+    return slice(c).iter();
+  }
+};
+
+template <HasNext A>
+struct IntoIterator<A>
+{
+  static auto into_iter(A c)
+  {
+    return c;
+  }
+};
+
+template <typename A>
+concept Iterable = requires(A a)
+{
+  IntoIterator<A>::into_iter(a);
+};
+
+template <typename T>
+auto into_iter(T a)
+{
+  return IntoIterator<T>::into_iter(a);
+}
+
 namespace detail
 {
+
+template <typename T>
+std::string type_string()
+{
+  return __PRETTY_FUNCTION__;
+}
 
 template <typename F, std::size_t... I>
 auto static_for_impl(F&& a, std::index_sequence<I...>)
@@ -433,6 +492,7 @@ struct Option
   template <typename... Args>
   Option(Args... v) : v_(v...), populated_{ true } {};
   Option(const T& v) : v_(v), populated_{ true } {};
+  Option(T&& v) : v_(v), populated_{ true } {};
   //  Option(T&& v) : v_{ v }, populated_{ true } {};
   Option() : populated_{ false } {};
   Option(const Option<T>& v) : populated_{ v.populated_ }, v_{ v.v_ } {};
@@ -554,12 +614,48 @@ struct Iterator
     return Tuple<usize, Option<usize>>(size_, Option<usize>());
   }
 
+  // [[nodiscard("map is not consumed")]]  doesn't work? :<
   template <std::invocable<T> F>
   auto map(F&& f)
   {
     using U = std::invoke_result<F, T>::type;
     auto generator = [this, f]() mutable -> Option<U> { return this->next().map(f); };
     return make_iterator<U>(std::move(generator), size_);
+  }
+
+  template <Iterable It>
+  auto zip(It&& f) &&
+  {
+    auto our_it = std::move(f_);
+    auto other_it = into_iter(f);
+    bool finished = false;
+
+    const auto [our_lowest, our_highest] = size_hint();
+    const auto [other_lowest, other_highest] = other_it.size_hint();
+    const auto new_lowest = std::min<usize>(our_lowest, other_lowest);
+
+    // Get the types, both return an option, which we can get the type of.
+    using L = T;
+    using R = decltype(other_it)::type;
+    using U = Tuple<L, R>;
+    auto generator = [our_it, other_it, finished]() mutable -> Option<U>
+    {
+      if (finished)
+      {
+        return Option<U>();
+      }
+      auto l = our_it();
+      auto r = other_it.next();
+      if (l.is_none() || r.is_none())
+      {
+        finished = true;
+        return Option<U>();
+      }
+      auto l_r = U(std::move(l).unwrap(), std::move(r).unwrap());
+      return Option<U>(std::move(l_r));
+    };
+
+    return make_iterator<U>(std::move(generator), new_lowest);
   }
 
   auto copied()
@@ -690,9 +786,6 @@ static auto make_iterator(RawIter&& start_, RawIter&& end_, usize size)
       },
       size);
 }
-
-template <typename T>
-struct Slice;
 
 template <typename T>
 struct Slice
@@ -887,7 +980,7 @@ auto iter(const C& container)
   auto start = container.cbegin();
   auto end = container.cend();
   const auto size = container.size();
-  return detail::make_iterator<const typename C::value_type*>(start, end, size);
+  return detail::make_iterator<Ref<typename C::value_type>>(start, end, size);
 }
 
 template <typename C>
@@ -896,7 +989,7 @@ auto iter_mut(C& container)
   auto start = container.begin();
   auto end = container.end();
   const auto size = container.size();
-  return detail::make_iterator<typename C::value_type*>(start, end, size);
+  return detail::make_iterator<RefMut<typename C::value_type>>(start, end, size);
 }
 
 template <typename C>
@@ -1014,6 +1107,10 @@ using namespace rust::types;
 using detail::operator""_i;
 }  // namespace prelude
 
+namespace literals
+{
+using detail::operator""_i;
+}  // namespace literals
 }  // namespace rust
 
 namespace std
