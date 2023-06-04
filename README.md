@@ -14,13 +14,18 @@ And a bit more to prototype what a more-Rust-like standard library for C++ would
 - Tuple
 - Vec
 
+And lets make everything printable, because, well developers print stuff, lets make that seamless.
+
 ## Iterators
+
+Create an iterator from a slice, map it and sum it.
 ```cpp
     const std::vector<int> a{ 1, 2, 3, 4 };
     auto sum = rs::iter(a).map([](const auto& v) { return *v * *v; }).sum();
     ASSERT_EQ(sum, 1 + 4 + 9 + 16);
 ```
 
+Or a range based for loop over the iterator.
 ```cpp
     const std::vector<int> a{ 1, 2, 3, 4 };
     for (const auto& v : rs::iter(a).map([](const auto& v) { return *v * *v; }))
@@ -30,6 +35,7 @@ And a bit more to prototype what a more-Rust-like standard library for C++ would
     // 1 4 9 16
 ```
 
+Enumerate on an iterator returns a tuple of values;
 ```cpp
     std::vector<int> a{ 1, 2, 3};
     for (const auto& [i, v] : rs::iter(a).enumerate())
@@ -41,6 +47,7 @@ And a bit more to prototype what a more-Rust-like standard library for C++ would
     // i: 2 -> 3
 ```
 
+Collect works and support implicit types:
 ```cpp
 
     const std::vector<int> a{ 1, 2, 3, 4 };
@@ -48,11 +55,16 @@ And a bit more to prototype what a more-Rust-like standard library for C++ would
     // Return type idiom, type inferred from conversion to the type on the left
     std::vector<int> and_back = rs::iter(a).copied().collect();
 ```
+
+Or explicit types:
 ```cpp
     const std::vector<int> a{ 1, 2, 3, 4 };
     auto and_back = rs::iter(a).copied().collect<std::vector<float>>();
+    std::cout << rs::slice(and_back) << std::endl;
+    // [1.000000, 2.000000, 3.000000, 4.000000]
 ```
 
+map operations can be chained.
 ```cpp
     const std::vector<int> a{ 1, 2, 3 };
     auto our_map_it = rs::iter(a)
@@ -63,6 +75,7 @@ And a bit more to prototype what a more-Rust-like standard library for C++ would
     // [1.500000, 4.500000, 9.500000]
 ```
 
+Support for terminators like `any()`;
 ```cpp
     const std::vector<int> a{ 2, 4, 6 };
     const auto has_even = rs::iter(a).any([](const auto& v) { return *v % 2 == 0; });
@@ -73,6 +86,7 @@ And a bit more to prototype what a more-Rust-like standard library for C++ would
     // has_odd:0
 ```
 
+Zip returns a tuple, which can be destructured with a structured binding.
 ```cpp
     std::vector<int> a{ 1, 2, 3, 4 };
     std::vector<int> b{ 10, 20, 30, 40 };
@@ -89,7 +103,7 @@ And a bit more to prototype what a more-Rust-like standard library for C++ would
     ASSERT_EQ(rust::slice(v), rust::slice(expected));
 ```
 
-Or zip with a container that supports `IntoIter`
+Or zip with any container that supports `IntoIter`, so `iter(container).zip(container)`;
 ```cpp
     using namespace rust::literals;
     std::vector<int> a{ 1, 2, 3, 4 };
@@ -104,7 +118,7 @@ Or zip with anything that acts like an iterator, for example the result of `map(
 ```cpp
     using namespace rust::literals;
     auto x = rust::iter(a)
-                 .copied()
+                 .copied() // This ensures we get a copy by value instead of a Ref.
                  .zip(rust::iter(a).map([](const auto& v) { return *v * 10; }))
                  .map([](const auto& v) { return v[0_i] + v[1_i]; })
                  .collect<std::vector<int>>();
@@ -114,6 +128,7 @@ Or zip with anything that acts like an iterator, for example the result of `map(
 
 ## Slices
 
+Slices can be... sliced, just like in Rust:
 ```cpp
     std::vector<int> a{ 1, 2, 3, 4 };
     auto slice = rs::slice(a);
@@ -141,6 +156,7 @@ Or zip with anything that acts like an iterator, for example the result of `map(
     }
 ```
 
+They can be changed into an (mutable) iterator;
 ```cpp
     std::vector<int> a{ 1, 2, 3, 4 };
     auto slice = rs::slice(a);
@@ -152,6 +168,7 @@ Or zip with anything that acts like an iterator, for example the result of `map(
     ASSERT_EQ(rs::slice(a), rs::slice(expected));
 ```
 
+Support `sort()` or print.
 ```cpp
     std::vector<int> a{ 1, 4, 2, 3 };
     auto slice = rs::slice(a);
@@ -163,7 +180,7 @@ Or zip with anything that acts like an iterator, for example the result of `map(
 
 ```
 
-Example of using a slice method, like `starts_with`.
+Example of using a slice method, like `starts_with()`, which works with any `Borrowable`:
 ```cpp
 
     // Definition of starts_with is:

@@ -183,10 +183,8 @@ int main(int argc, char* argv[])
     std::cout << "Check if we can collect into an explicit type." << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
     auto and_back = rs::iter(a).collect<std::vector<float>>();
-    for (auto& v : and_back)
-    {
-      std::cout << v << ", ";
-    }
+    std::cout << rs::slice(and_back) << std::endl;
+
     std::cout << std::endl;
   }
 
