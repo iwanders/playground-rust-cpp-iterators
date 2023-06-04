@@ -149,17 +149,17 @@ SS& operator<<(SS& os, RefMut<T>& ref)
   return os;
 }
 
-struct unit
+struct Unit
 {
 };
-std::string to_string(unit)
+std::string to_string(Unit)
 {
   return "()";
 }
 template <typename SS, typename T>
-SS& operator<<(SS& os, unit ref)
+SS& operator<<(SS& os, Unit u)
 {
-  os << to_string(ref);
+  os << to_string(u);
   return os;
 }
 
@@ -187,6 +187,27 @@ auto deref(T&& v) requires Dereferencable<T>
 
 template <typename A>
 struct FromIterator;
+
+template <typename T>
+concept Underscore = std::is_same_v<T, void> || std::is_same_v<T, Unit>;
+
+template <Underscore A>
+struct FromIterator<A>
+{
+  template <typename It>
+  static A from_iter(It&& it)
+  {
+    auto z = it.next();
+    while (z.is_some())
+    {
+      z = it.next();
+    }
+    if constexpr (!std::is_same_v<A, void>)
+    {
+      return A{};
+    }
+  }
+};
 
 template <typename A>
 struct FromIterator<std::vector<A>>
@@ -439,7 +460,7 @@ SS& operator<<(SS& os, const Tuple<T...>& t)
 }
 
 template <typename T>
-using TypeOrUnit = typename std::conditional_t<std::is_same_v<T, void>, unit, T>;
+using TypeOrUnit = typename std::conditional_t<std::is_same_v<T, void>, Unit, T>;
 
 template <typename T>
 struct Option
@@ -452,10 +473,10 @@ struct Option
     using U = TypeOrUnit<typename std::invoke_result_t<F, T>>;
     if (populated_)
     {
-      if constexpr (std::is_same_v<U, unit>)
+      if constexpr (std::is_same_v<U, Unit>)
       {
         f(v_);
-        return Option<U>(unit{});
+        return Option<U>(Unit{});
       }
       else
       {
@@ -568,8 +589,6 @@ struct Option
   //  Option(T&& v) : v_{ v }, populated_{ true } {};
   Option() : populated_{ false } {};
 
-  Option(void) requires std::is_same_v<T, unit> : populated_{ false } {};
-
   Option(const Option<T>& v) : populated_{ v.populated_ }, v_{ v.v_ } {};
   ~Option()
   {
@@ -677,6 +696,10 @@ struct Iterator
   using type = T;
   using function_type = NextFun;
 
+  struct ReturnTypeCollect
+  {
+  };
+
   Iterator(NextFun&& f, std::size_t size) : f_(f), size_(size){};
 
   Option<T> next()
@@ -693,7 +716,7 @@ struct Iterator
   template <std::invocable<T> F>
   auto map(F&& f)
   {
-    using U = std::invoke_result<F, T>::type;
+    using U = TypeOrUnit<typename std::invoke_result_t<F, T>>;
     auto generator = [this, f]() mutable -> Option<U> { return this->next().map(f); };
     return make_iterator<U>(std::move(generator), size_);
   }
@@ -780,10 +803,10 @@ struct Iterator
     return make_iterator<U>(std::move(generator), size_);
   }
 
-  template <typename CollectType = void>
+  template <typename CollectType = ReturnTypeCollect>
   auto collect() &&
   {
-    if constexpr (std::is_same<CollectType, void>::value)
+    if constexpr (std::is_same<CollectType, ReturnTypeCollect>::value)
     {
       return Collector{ std::move(*this) };
     }
@@ -1328,6 +1351,7 @@ namespace prelude
 using rust::Option;
 using rust::Slice;
 using rust::Tuple;
+using rust::Unit;
 using rust::Vec;
 
 using rust::drain;

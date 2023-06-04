@@ -599,6 +599,7 @@ int main(int argc, char* argv[])
 
     // We can also get a mut reference;
     //  a.first_mut().unwrap().deref() = 32;
+    // or, the safer;
     a.first_mut().map([](auto v) { *v = 32; });
 
     std::cout << "a:" << a << std::endl;
@@ -615,6 +616,28 @@ int main(int argc, char* argv[])
     // And into const vec
     const auto use_conststdvec = [](const std::vector<u8>& v) {};
     use_conststdvec(a);
+  }
+
+  {
+    std::cout << "Map on iter without return" << std::endl;
+    using namespace rust::prelude;
+    Vec<u8> a{ 0x61, 0x62, 0x63, 0x64 };
+    {
+      int v = 0;
+      auto it = a.iter().map([&v](const auto& x) { v += *x; });
+      std::cout << type_string<decltype(it)::type>() << std::endl;
+      ASSERT_EQ(v, 0);  // nothing happened yet, nothing is yield from the iterator.
+      std::move(it).collect<Unit>();
+      ASSERT_EQ(v, 0x61 + 0x62 + 0x63 + 0x64);
+    }
+    {
+      int v = 0;
+      auto it = a.iter().map([&v](const auto& x) { v += *x; });
+      std::cout << type_string<decltype(it)::type>() << std::endl;
+      ASSERT_EQ(v, 0);  // nothing happened yet, nothing is yield from the iterator.
+      std::move(it).collect<void>();
+      ASSERT_EQ(v, 0x61 + 0x62 + 0x63 + 0x64);
+    }
   }
 
   return 0;

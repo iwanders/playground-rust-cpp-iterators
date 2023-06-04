@@ -125,6 +125,29 @@ Or zip with anything that acts like an iterator, for example the result of `map(
     ASSERT_EQ(rust::slice(x), rust::slice(expected));
 ```
 
+Collecting into `Unit` or `void` runs the iterator to completion:
+```cpp
+  std::cout << "Map on iter without return" << std::endl;
+  using namespace rust::prelude;
+  Vec<u8> a{ 0x61, 0x62, 0x63, 0x64 };
+  {
+    int v = 0;
+    auto it = a.iter().map([&v](const auto& x) { v += *x; });
+    std::cout << type_string<decltype(it)::type>() << std::endl;
+    ASSERT_EQ(v, 0);  // nothing happened yet, nothing is yield from the iterator.
+    std::move(it).collect<Unit>();
+    ASSERT_EQ(v, 0x61 + 0x62 + 0x63 + 0x64);
+  }
+  {
+    int v = 0;
+    auto it = a.iter().map([&v](const auto& x) { v += *x; });
+    std::cout << type_string<decltype(it)::type>() << std::endl;
+    ASSERT_EQ(v, 0);  // nothing happened yet, nothing is yield from the iterator.
+    std::move(it).collect<void>();
+    ASSERT_EQ(v, 0x61 + 0x62 + 0x63 + 0x64);
+  }
+```
+
 
 ## Slices
 
@@ -301,7 +324,9 @@ such that other functions can interact with `Vec<T>` as if it is a normal `std::
     ASSERT_EQ(a.first().copied(), Option<u8>(0x61));
 
     // We can also get a mut reference;
-    a.first_mut().unwrap().deref() = 32;
+    //  a.first_mut().unwrap().deref() = 32;
+    // or, the safer;
+    a.first_mut().map([](auto v) { *v = 32; });
     std::cout << "a:" << a << std::endl;
     // a:[32, 98, 99, 100]
     ASSERT_EQ(a.first().copied(), Option<u8>(32));
