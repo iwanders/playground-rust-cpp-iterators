@@ -23,7 +23,7 @@ And a bit more to prototype what a more-Rust-like standard library for C++ would
 
 ```cpp
     const std::vector<int> a{ 1, 2, 3, 4 };
-    for (const auto& v : rs::iter(a).map([](const int* v) { return *v * *v; }))
+    for (const auto& v : rs::iter(a).map([](const auto& v) { return *v * *v; }))
     {
       std::cout << " " << v;
     }
