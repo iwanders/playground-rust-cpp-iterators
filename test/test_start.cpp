@@ -81,10 +81,9 @@ int main(int argc, char* argv[])
 
   {
     std::cout << "Start with the definition of an iterator" << std::endl;
-    const std::vector<int> a{ 1, 2, 3, 4 };
+    const std::vector<int> a{ 1, 2, 3 };
     auto it = rs::iter(a);
 
-    std::cout << it.next() << std::endl;
     std::cout << it.next() << std::endl;
     std::cout << it.next() << std::endl;
     std::cout << it.next() << std::endl;
@@ -193,18 +192,14 @@ int main(int argc, char* argv[])
 
   {
     std::cout << "Check if we can chain maps and collects." << std::endl;
-    const std::vector<int> a{ 1, 2, 3, 4 };
+    const std::vector<int> a{ 1, 2, 3 };
     auto our_map_it = rs::iter(a)
                           .map([](const auto& v) { return static_cast<double>(*v); })
-                          .map([](const auto& v) { return v * v + 0.5; })
-                          .map([](const auto& x) { return std::sqrt(x); });
+                          .map([](const auto& v) { return v * v + 0.5; });
     std::cout << "here be dragons: ";
     std::cout << type_string<decltype(our_map_it)::function_type>() << std::endl;
     auto and_back = std::move(our_map_it).collect<std::vector<float>>();
-    for (auto& v : and_back)
-    {
-      std::cout << v << std::endl;
-    }
+    std::cout << rs::slice(and_back) << std::endl;
     std::cout << std::endl;
   }
 
@@ -212,6 +207,7 @@ int main(int argc, char* argv[])
     std::cout << "Check if sum works" << std::endl;
     const std::vector<int> a{ 1, 2, 3, 4 };
     auto sum = rs::iter(a).map([](const auto& v) { return *v * *v; }).sum();
+    ASSERT_EQ(sum, 1 + 4 + 9 + 16);
     std::cout << sum << std::endl;
   }
 
@@ -240,23 +236,19 @@ int main(int argc, char* argv[])
 
   {
     std::cout << "Check enumerate." << std::endl;
-    std::vector<int> a{ 1, 2, 3, 4 };
+    std::vector<int> a{ 1, 2, 3 };
     for (const auto& [i, v] : rs::iter(a).enumerate())
     {
       std::cout << "i: " << i << " -> " << *v << std::endl;
-      ;
     }
     std::cout << std::endl;
   }
 
   {
-    using namespace rust::literals;
     std::vector<int> a{ 1, 2, 3, 4 };
-    auto it_a = rust::iter(a);
     std::vector<int> b{ 10, 20, 30, 40 };
-    auto it_b = rust::iter(b);
-    auto v = std::move(it_a)
-                 .zip(it_b)
+    auto v = rust::iter(a)
+                 .zip(rust::iter(b))
                  .map(
                      [](const auto& v)
                      {
@@ -291,7 +283,7 @@ int main(int argc, char* argv[])
     const std::vector<int> a{ 2, 4, 6 };
     const auto has_even = rs::iter(a).any([](const auto& v) { return *v % 2 == 0; });
     std::cout << "has_even:" << has_even << std::endl;
-    const auto has_odd = rs::iter(a).any([](const auto& v) { return *v % 2 == 0; });
+    const auto has_odd = rs::iter(a).any([](const auto& v) { return *v % 2 != 0; });
     std::cout << "has_odd:" << has_odd << std::endl;
     std::cout << std::endl;
   }
@@ -320,7 +312,6 @@ int main(int argc, char* argv[])
     for (auto& x : z)
     {
       std::cout << " " << x << std::endl;
-      ;
     }
     std::cout << std::endl;
   }
@@ -381,10 +372,11 @@ int main(int argc, char* argv[])
     auto slice = rs::slice(a);
     for (auto& x : slice.iter_mut())
     {
-      std::cout << x << std::endl;
       *x = *x * *x;
     }
-    std::cout << "s: " << slice << std::endl;
+    std::vector<int> expected{ 1, 4, 9, 16 };
+    ASSERT_EQ(rs::slice(a), rs::slice(expected));
+    print_vector(a);
     std::cout << std::endl;
   }
 
@@ -482,6 +474,7 @@ int main(int argc, char* argv[])
 
   // Test our tuple, which is nice... printable, indexable, etc etc.
   {
+    std::cout << "Tuple stuff " << std::endl;
     using namespace rust::prelude;
     const auto t = Tuple(3, 5.5);
     std::cout << t << std::endl;
@@ -496,6 +489,8 @@ int main(int argc, char* argv[])
     std::cout << "s: " << s << ", "
               << "v:" << v << std::endl;
     std::cout << t2 << std::endl;
+
+    std::cout << "end  Tuple stuff " << std::endl;
 
     // Test all possible permutations.
     {
@@ -588,23 +583,34 @@ int main(int argc, char* argv[])
     using namespace rust::prelude;
     Vec<u8> a{ 0x61, 0x62, 0x63, 0x64 };
     Vec<char> b = a.iter().copied().map([](auto v) { return v - 0x20; }).collect();
-    std::cout << b << std::endl;
-    std::string v = b.iter().collect();
-    std::cout << v << std::endl;
+    std::cout << "b:" << b << std::endl;
 
+    // Vec<char> is collectable into a string.
+    std::string v = b.iter().collect();
+    std::cout << "v: " << v << std::endl;
+    std::cout << "a:" << a << std::endl;
+
+    // Since it supports all slice methods, we can also do starts_with.
     ASSERT_EQ(a.starts_with("abc"), true);
+
+    // Last and first return Option<Ref<>> types;
     ASSERT_EQ(a.last(), Option<rust::Ref<u8>>(&a[3]));
     ASSERT_EQ(a.last().copied(), Option<u8>(0x64));
     ASSERT_EQ(a.first(), Option<rust::Ref<u8>>(&a[0]));
     ASSERT_EQ(a.first().copied(), Option<u8>(0x61));
 
-    std::cout << a << std::endl;
-    std::cout << a.first() << std::endl;
+    // We can also get a mut reference;
+    a.first_mut().unwrap().deref() = 32;
+    std::cout << "a:" << a << std::endl;
+    ASSERT_EQ(a.first().copied(), Option<u8>(32));
+
+    // Vec is convertible into std::vector<u8>&;
     const auto use_stdvec = [](std::vector<u8>& v) { v.front() = 33; };
     use_stdvec(a);
     ASSERT_EQ(a.first().copied(), Option<u8>(33));
     std::cout << a.first() << std::endl;
 
+    // And into const vec
     const auto use_conststdvec = [](const std::vector<u8>& v) {};
     use_conststdvec(a);
   }

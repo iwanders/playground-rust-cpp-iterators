@@ -914,6 +914,15 @@ struct SliceInterface
     return Option<Ref<T>>();
   }
 
+  Option<RefMut<T>> first_mut()
+  {
+    if (len() > 0)
+    {
+      return Option<RefMut<T>>(RefMut<T>(&get_unchecked_mut(0)));
+    }
+    return Option<RefMut<T>>();
+  }
+
   /// Take a subslice
   template <typename A = std::initializer_list<int>, typename B = std::initializer_list<int>>
   Slice<T> operator()(A a, B b) const
@@ -1036,9 +1045,13 @@ template <typename T>
 std::string to_string(const Slice<T>& slice)
 {
   std::string s = "[";
-  for (const auto& v : slice.iter())
+  for (const auto& [i, v] : slice.iter().enumerate())
   {
-    s += " " + to_string(*v);
+    s += to_string(*v);
+    if (i != slice.len() - 1)
+    {
+      s += ", ";
+    }
   }
   s += "]";
   return s;
