@@ -6,15 +6,15 @@
 > Do not use this... it's just an experiment
 
 
-Some dabbling around exploring how Rust style iterators could work in C++ and learning to use C++20
-concepts instead of SFINAE.
-
-And a bit more to prototype what a more-Rust-like standard library for C++ would look like.
+An exploration how a C++ version of the [Rust standard library](https://doc.rust-lang.org/std/index.html#the-rust-standard-library) could work.
+Mostly to use the C++20 concepts for the first time. Started creating `Iterators`, but expanded this into a few more types:
+- Iterators
 - Slices
 - Tuple
 - Vec
 
-And lets make everything printable, because, well developers print stuff, lets make that seamless.
+None of these are feature complete, that would take a lot of work, they have just a few methods each to
+see how it could work and what the semantics would be.
 
 ## Iterators
 
