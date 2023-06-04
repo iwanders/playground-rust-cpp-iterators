@@ -878,11 +878,19 @@ struct SliceInterface
 
   T& operator[](usize index)
   {
+    if (index >= len())
+    {
+      throw panic_error("out of bounds access");
+    }
     return begin()[index];
   }
 
   const T& operator[](usize index) const
   {
+    if (index >= len())
+    {
+      throw panic_error("out of bounds access");
+    }
     return begin()[index];
   }
 

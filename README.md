@@ -242,7 +242,7 @@ Example of using a slice method, like `starts_with()`, which works with any `Bor
 
 ## Tuple
 
-Tuples are used by the `zip()` method, and for `size_hint()`... so we might as well explore what a nice tuple would look like, with `t[0_1]` indexing instead of `std::get<0>(t)`. And lets make it printable, because developers print stuff.
+Tuples are used by the `zip()` method, and for `size_hint()`... so we might as well explore what a nice tuple would look like, with `operator[]` with a compile time constant 'string' literal; `t[0_i]` indexing instead of `std::get<0>(t)`.
 ```cpp
     using namespace rust::prelude;
     const auto t = Tuple(3, 5.5);
@@ -310,6 +310,7 @@ such that other functions can interact with `Vec<T>` as if it is a normal `std::
     const auto use_stdvec = [](std::vector<u8>& v) { v.front() = 33; };
     use_stdvec(a);
     ASSERT_EQ(a.first().copied(), Option<u8>(33));
+    ASSERT_EQ(a[0], 33);
     std::cout << a.first() << std::endl;
     // Some(33)
 

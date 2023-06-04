@@ -606,6 +606,7 @@ int main(int argc, char* argv[])
     const auto use_stdvec = [](std::vector<u8>& v) { v.front() = 33; };
     use_stdvec(a);
     ASSERT_EQ(a.first().copied(), Option<u8>(33));
+    ASSERT_EQ(a[0], 33);
     std::cout << a.first() << std::endl;
 
     // And into const vec
