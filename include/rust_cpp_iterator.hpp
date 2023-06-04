@@ -489,6 +489,12 @@ struct Option
     }
   }
 
+  //  template <std::invocable<T> F>
+  //  Option<TypeOrUnit<typename std::invoke_result_t<F, T>>> and_then(F&& f) && {
+    //  if (is_some()) {
+    //  }
+  //  }
+
   auto copied() &&
   {
     return map([](const auto& v) { return *v; });

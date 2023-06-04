@@ -133,14 +133,21 @@ int main(int argc, char* argv[])
   {
     std::cout << "Check that we can map on an option" << std::endl;
     // Option map...
-    auto opt1 = rs::Option(3);
-    auto opt2 = opt1.map([](const auto& v) { return v * v; });
+    auto opt2 = rs::Option(3).map([](const auto& v) { return v * v; });
     std::cout << opt2 << std::endl;
 
-    auto opt3 = opt2.map([](const auto& v) { return v + 0.5; });
+    auto opt3 = rs::Option(3).map([](const auto& v) { return v + 0.5; });
     std::cout << opt3 << std::endl;
     std::cout << std::endl;
-    ASSERT_EQ(opt3, rs::Option(9.5));
+    ASSERT_EQ(opt3, rs::Option(3.5));
+  }
+  {
+    std::cout << "Check that we can perform and_then" << std::endl;
+    // Option map...
+    auto opt1 = rs::Option(3);
+    //  auto opt2 = opt1.and_then([](const auto& v) { return v * v; });
+    //  std::cout << opt2 << std::endl;
+
   }
 
   {
