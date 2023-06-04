@@ -598,7 +598,9 @@ int main(int argc, char* argv[])
     ASSERT_EQ(a.first().copied(), Option<u8>(0x61));
 
     // We can also get a mut reference;
-    a.first_mut().unwrap().deref() = 32;
+    //  a.first_mut().unwrap().deref() = 32;
+    a.first_mut().map([](auto v) { *v = 32; });
+
     std::cout << "a:" << a << std::endl;
     ASSERT_EQ(a.first().copied(), Option<u8>(32));
 

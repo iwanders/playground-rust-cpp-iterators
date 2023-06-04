@@ -149,6 +149,20 @@ SS& operator<<(SS& os, RefMut<T>& ref)
   return os;
 }
 
+struct unit
+{
+};
+std::string to_string(unit)
+{
+  return "()";
+}
+template <typename SS, typename T>
+SS& operator<<(SS& os, unit ref)
+{
+  os << to_string(ref);
+  return os;
+}
+
 template <typename T>
 using RefWrapper = std::conditional_t<std::is_const_v<std::remove_reference_t<T>>, Ref<const std::remove_cvref_t<T>>,
                                       RefMut<std::remove_cvref_t<T>>>;
@@ -425,17 +439,28 @@ SS& operator<<(SS& os, const Tuple<T...>& t)
 }
 
 template <typename T>
+using TypeOrUnit = typename std::conditional_t<std::is_same_v<T, void>, unit, T>;
+
+template <typename T>
 struct Option
 {
   using type = T;
 
   template <std::invocable<T> F>
-  Option<typename std::invoke_result<F, T>::type> map(F&& f)
+  Option<TypeOrUnit<typename std::invoke_result_t<F, T>>> map(F&& f)
   {
-    using U = std::invoke_result<F, T>::type;
+    using U = TypeOrUnit<typename std::invoke_result_t<F, T>>;
     if (populated_)
     {
-      return Option<U>(f(v_));
+      if constexpr (std::is_same_v<U, unit>)
+      {
+        f(v_);
+        return Option<U>(unit{});
+      }
+      else
+      {
+        return Option<U>(f(v_));
+      }
     }
     else
     {
@@ -542,6 +567,9 @@ struct Option
   Option(T&& v) : v_(v), populated_{ true } {};
   //  Option(T&& v) : v_{ v }, populated_{ true } {};
   Option() : populated_{ false } {};
+
+  Option(void) requires std::is_same_v<T, unit> : populated_{ false } {};
+
   Option(const Option<T>& v) : populated_{ v.populated_ }, v_{ v.v_ } {};
   ~Option()
   {
