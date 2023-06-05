@@ -365,7 +365,8 @@ auto slice_hello = rs::slice(a);
 
 ## Tuple
 
-Tuples are used by the `zip()` method, and for `size_hint()`... so we might as well explore what a nice tuple would look like, with `operator[]` with a compile time constant 'string' literal; `t[0_i]` indexing instead of `std::get<0>(t)`.
+Tuples are used by the `zip()` method, and for `size_hint()`... so we might as well explore what a nice tuple would look like, with `operator[]` with a compile time constant 'string' literal; `t[0_i]` indexing instead of `std::get<0>(t)`. Similar to [p2726](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2726r0.html) and [boost::hana](http://boostorg.github.io/hana/).
+
 ```cpp
 using namespace rust::prelude;
 const auto t = Tuple(3, 5.5);
