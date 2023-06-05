@@ -61,6 +61,8 @@ ASSERT_EQ(maybe_some_len, rs::Option<std::size_t>(13));
 rs::Option<rs::Ref<std::string>> x;
 ASSERT_EQ(x.map([](auto v){return (*v).size();}), rs::Option<std::size_t>());
 ```
+Notice the difference in the last assert, Rust would have automatic dereferencing on `v`, but in
+c++ we need `*v` to make it compile.
 
 
 Apply [`and_then`](https://doc.rust-lang.org/std/option/enum.Option.html#method.and_then):
