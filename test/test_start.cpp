@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
     auto value = rs::Option(3);
     std::cout << "value: " << value << std::endl;
     ASSERT_EQ(value.is_some(), true);
-    std::cout << "Optional Ref<int>: " << value.as_ref() << std::endl;
+    std::cout << "Option<Ref<int>>: " << value.as_ref() << std::endl;
     std::cout << "Ref<int>: " << value.as_ref().unwrap() << std::endl;
     std::cout << "int&: " << value.as_ref().unwrap().deref() << std::endl;
     std::cout << "unwrap into int: " << std::move(value).unwrap() << std::endl;

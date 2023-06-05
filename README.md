@@ -31,8 +31,8 @@ auto value = rs::Option(3);
 std::cout << "value: " << value << std::endl;
 // value: Some(3)
 ASSERT_EQ(value.is_some(), true);
-std::cout << "Optional Ref<int>: " << value.as_ref() << std::endl;
-// Optional Ref<int>: Some(3)
+std::cout << "Option<Ref<int>>: " << value.as_ref() << std::endl;
+// Option<Ref<int>>: Some(3)
 std::cout << "Ref<int>: " << value.as_ref().unwrap() << std::endl;
 // Ref<int>: 3
 std::cout << "int&: " << value.as_ref().unwrap().deref() << std::endl;
