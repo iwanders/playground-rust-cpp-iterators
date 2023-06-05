@@ -365,9 +365,9 @@ int main(int argc, char* argv[])
   }
 
   {
-    std::cout << "Check if range based for reference works." << std::endl;
     std::vector<int> a{ 1, 2, 3, 4 };
     auto slice = rs::slice(a);
+    std::cout << slice << std::endl;
     std::cout << "Slice len: " << slice.len() << std::endl;
     std::cout << "Slice[2]: " << slice[2] << std::endl;
     std::cout << std::endl;
@@ -422,7 +422,7 @@ int main(int argc, char* argv[])
 
   {
     std::cout << "Check if sorting slice works" << std::endl;
-    std::vector<int> a{ 1, 4, 2, 3 };
+    std::array<int, 4> a{ 1, 4, 2, 3 };
     auto slice = rs::slice(a);
     std::cout << "s: " << slice << std::endl;
     slice.sort();

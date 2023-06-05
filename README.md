@@ -13,9 +13,16 @@ Mostly to use the C++20 concepts for the first time. Started creating `Iterators
 - Slices
 - Tuple
 - Vec
+- Ref / RefMut: Used by iterators.
+
+Traits:
+- FromIter (used by `collect`)
+- Borrow (used by `starts_with`)
 
 None of these are feature complete, that would take a lot of work, they have just a few methods each to
 see how it could work and what the semantics would be.
+
+Examples are sort of ordered, but sometimes they use types / concepts introduced later.
 
 ## Option
 An iterator's `.next()` returns an [`Option`](https://doc.rust-lang.org/std/option/enum.Option.html#), so we need that first.
@@ -101,7 +108,7 @@ std::cout << rs::Option<int>() << std::endl;
 // None
 ```
 
-Create an iterator from a slice, map it and sum it.
+Create an iterator from a vector, map it and sum it.
 ```cpp
 const std::vector<int> a{ 1, 2, 3, 4 };
 auto sum = rs::iter(a).map([](const auto& v) { return *v * *v; }).sum();
@@ -185,7 +192,7 @@ Zip returns a tuple, which can be destructured with a structured binding.
   ASSERT_EQ(rust::slice(v), rust::slice(expected));
 ```
 
-Or zip with any container that supports `IntoIter`, so `iter(container).zip(container)`;
+Or zip with any container directly, as long as they support `IntoIter`, so `iter(container).zip(container)`, using the `Tuple` indexing showed later.
 ```cpp
 using namespace rust::literals;
 std::vector<int> a{ 1, 2, 3, 4 };
@@ -204,6 +211,7 @@ auto x = rust::iter(a)
              .zip(rust::iter(a).map([](const auto& v) { return *v * 10; }))
              .map([](const auto& v) { return v[0_i] + v[1_i]; })
              .collect<std::vector<int>>();
+std::vector<int> expected{ 11, 22, 33, 44 };
 ASSERT_EQ(rust::slice(x), rust::slice(expected));
 ```
 
@@ -233,10 +241,18 @@ Vec<u8> a{ 0x61, 0x62, 0x63, 0x64 };
 
 ## Slices
 
-Slices can be... sliced, just like in Rust:
+Slices can be constructed from anything that has `.data()` and `.size()`, but also with the `Borrow` trait.
+
+Slices support equality, printing and slices can be... sliced, just like in Rust:
 ```cpp
 std::vector<int> a{ 1, 2, 3, 4 };
 auto slice = rs::slice(a);
+std::cout << slice << std::endl;
+// [1, 2, 3, 4]
+std::cout << "Slice len: " << slice.len() << std::endl;
+// Slice len: 4
+std::cout << "Slice[2]: " << slice[2] << std::endl;
+// Slice[2]: 3
 
 {
   // slice[2..]
@@ -273,9 +289,9 @@ std::vector<int> expected{ 1, 4, 9, 16 };
 ASSERT_EQ(rs::slice(a), rs::slice(expected));
 ```
 
-Support `sort()` or print.
+Support `sort()` or print, lets use an `std::array` for this one:
 ```cpp
-std::vector<int> a{ 1, 4, 2, 3 };
+std::array<int, 4> a{ 1, 4, 2, 3 };
 auto slice = rs::slice(a);
 std::cout << "s: " << slice << std::endl;
 //s: [1, 4, 2, 3]
@@ -284,7 +300,10 @@ std::cout << "s: " << slice << std::endl;
 //s: [1, 2, 3, 4]
 ```
 
-Example of using a slice method, like `starts_with()`, which works with any `Borrowable`:
+Example of using a slice method, like `starts_with()`, which works with any `Borrowable` as argument.
+Of course, the slice itself can also be constructed from any container that has a contiguous values
+in memory. The code for `starts_with` is pretty boring, but it makes for a great showcase of the
+convenience, we use a string here, but this would work for any value that is `std::equality_comparable_with` the result of the `Borrow`.
 ```cpp
 
 // Definition of starts_with is:
@@ -378,8 +397,9 @@ std::cout << t2 << std::endl;
 ## Vec
 
 `Vec<T>` is a thin wrapper around `std::vector<T>` and doesn't support anything really, but it does incorporate the `SliceInterface`, so all slice methods can be
-invoked on it without conversion. And we make it convertible to a `std::vector<T>&`
-such that other functions can interact with `Vec<T>` as if it is a normal `std::vector`.
+invoked on it without conversion. We implement `FromIterator` such that `collect()` works nicely.
+
+And we make it convertible to a `std::vector<T>&` such that other functions can interact with `Vec<T>` as if it is a normal `std::vector`.
 
 ```cpp
 using namespace rust::prelude;
