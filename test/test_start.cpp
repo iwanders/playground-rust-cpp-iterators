@@ -107,6 +107,22 @@ int main(int argc, char* argv[])
   }
 
   {
+    std::cout << "Option intro" << std::endl;
+    auto empty = rs::Option<int>();
+    std::cout << "empty: " << empty << std::endl;
+    ASSERT_EQ(empty.is_some(), false);
+    ASSERT_EQ(empty.is_none(), true);
+    auto value = rs::Option(3);
+    std::cout << "value: " << value << std::endl;
+    ASSERT_EQ(value.is_some(), true);
+    std::cout << "Optional Ref<int>: " << value.as_ref() << std::endl;
+    std::cout << "Ref<int>: " << value.as_ref().unwrap() << std::endl;
+    std::cout << "int&: " << value.as_ref().unwrap().deref() << std::endl;
+    std::cout << "unwrap into int: " << std::move(value).unwrap() << std::endl;
+    std::cout << "Option intro // " << std::endl;
+  }
+
+  {
     auto opt = rs::Option(3);
     if (decltype(opt)::type v; opt.Some(v))
     {
@@ -135,19 +151,38 @@ int main(int argc, char* argv[])
     // Option map...
     auto opt2 = rs::Option(3).map([](const auto& v) { return v * v; });
     std::cout << opt2 << std::endl;
+    ASSERT_EQ(opt2, rs::Option(9));
 
     auto opt3 = rs::Option(3).map([](const auto& v) { return v + 0.5; });
     std::cout << opt3 << std::endl;
     std::cout << std::endl;
     ASSERT_EQ(opt3, rs::Option(3.5));
   }
+
+  {
+    std::cout << "Map rust example" << std::endl;
+    // Option map...
+    auto maybe_some_string = rs::Option(std::string("Hello, World!"));
+    auto maybe_some_len = maybe_some_string.map([](auto v) { return v.size(); });
+    ASSERT_EQ(maybe_some_len, rs::Option<std::size_t>(13));
+    rs::Option<rs::Ref<std::string>> x;
+    ASSERT_EQ(x.map([](auto v) { return (*v).size(); }), rs::Option<std::size_t>());
+  }
+
   {
     std::cout << "Check that we can perform and_then" << std::endl;
-    // Option map...
-    auto opt1 = rs::Option(3);
-    //  auto opt2 = opt1.and_then([](const auto& v) { return v * v; });
-    //  std::cout << opt2 << std::endl;
-
+    const auto sq_then_to_string = [](rust::u32 x) -> rust::Option<std::string>
+    {
+      rust::u64 z = x;
+      if ((z * z) > std::numeric_limits<rust::u32>::max())
+      {  // checked_mul(x)...
+        return rust::Option<std::string>();
+      }
+      return rust::Option<std::string>(std::to_string(static_cast<rust::u32>(z * z)));
+    };
+    ASSERT_EQ(rs::Option(2).and_then(sq_then_to_string), rust::Option(std::to_string(4)));
+    ASSERT_EQ(rs::Option(1000000).and_then(sq_then_to_string), rust::Option<std::string>());
+    ASSERT_EQ(rs::Option<rust::u32>().and_then(sq_then_to_string), rust::Option<std::string>());
   }
 
   {
@@ -533,8 +568,9 @@ int main(int argc, char* argv[])
       {
         auto& [ra, rb] = r_t;
         auto& [sa, sb] = s_t;
-        std::cout << "ra: " << type_string<decltype(ra)>() << std::endl;
-        std::cout << "sa: " << type_string<decltype(sa)>() << std::endl;
+        ASSERT_EQ(type_string<decltype(ra)>(), type_string<decltype(sa)>());
+        //  std::cout << "ra: " << type_string<decltype(ra)>() << std::endl;
+        //  std::cout << "sa: " << type_string<decltype(sa)>() << std::endl;
         ASSERT_EQ((std::is_same<decltype(ra), double>::value), true);
         ASSERT_EQ((std::is_same<decltype(rb), int>::value), true);
         ASSERT_EQ((std::is_same<decltype(sa), double>::value), true);
@@ -556,8 +592,9 @@ int main(int argc, char* argv[])
       {
         auto [ra, rb] = r_t;
         auto [sa, sb] = s_t;
-        std::cout << "ra: " << type_string<decltype(ra)>() << std::endl;
-        std::cout << "sa: " << type_string<decltype(sa)>() << std::endl;
+        ASSERT_EQ(type_string<decltype(ra)>(), type_string<decltype(sa)>());
+        //  std::cout << "ra: " << type_string<decltype(ra)>() << std::endl;
+        //  std::cout << "sa: " << type_string<decltype(sa)>() << std::endl;
 
         ASSERT_EQ((std::is_same<decltype(ra), double>::value), true);
         ASSERT_EQ((std::is_same<decltype(rb), int>::value), true);

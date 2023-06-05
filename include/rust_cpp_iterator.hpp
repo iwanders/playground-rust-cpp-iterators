@@ -466,6 +466,7 @@ template <typename T>
 struct Option
 {
   using type = T;
+  using NoneType = Option<T>;
 
   template <std::invocable<T> F>
   Option<TypeOrUnit<typename std::invoke_result_t<F, T>>> map(F&& f)
@@ -489,11 +490,15 @@ struct Option
     }
   }
 
-  //  template <std::invocable<T> F>
-  //  Option<TypeOrUnit<typename std::invoke_result_t<F, T>>> and_then(F&& f) && {
-    //  if (is_some()) {
-    //  }
-  //  }
+  template <std::invocable<T> F>
+  std::invoke_result_t<F, T> and_then(F&& f) &&
+  {
+    if (is_some())
+    {
+      return f(std::move(*this).unwrap());
+    }
+    return std::invoke_result_t<F, T>();
+  }
 
   auto copied() &&
   {
@@ -589,13 +594,29 @@ struct Option
   }
 
   template <typename... Args>
-  Option(Args... v) : v_(v...), populated_{ true } {};
-  Option(const T& v) : v_(v), populated_{ true } {};
-  Option(T&& v) : v_(v), populated_{ true } {};
-  //  Option(T&& v) : v_{ v }, populated_{ true } {};
+  Option(Args... v) : v_(v...), populated_{ true }
+  {
+    std::construct_at(&v_, std::forward<Args>(v)...);
+  };
+  Option(const T& v) : populated_{ true }
+  {
+    std::construct_at(&v_, v);
+  };
+  Option(T&& v) : v_(v), populated_{ true }
+  {
+    std::construct_at(&v_, std::move(v));
+  };
   Option() : populated_{ false } {};
 
-  Option(const Option<T>& v) : populated_{ v.populated_ }, v_{ v.v_ } {};
+  // Is this a copy constructor, or constructing an Option holding an Option!?
+  Option(const Option<T>& v) : populated_{ v.populated_ }
+  {
+    // call the constructor for v_.
+    if (v.is_some())
+    {
+      std::construct_at(&v_, v.as_ref().unwrap().deref());
+    }
+  };
   ~Option()
   {
     if (populated_)
@@ -607,7 +628,7 @@ struct Option
   Option<T>& operator=(Option<T>&& v)
   {
     populated_ = v.populated_;
-    v_ = std::move(v.v_);
+    std::construct_at(&v_, std::move(v.v_));
     v.populated_ = false;
     return *this;
   }
